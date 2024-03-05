@@ -1,5 +1,6 @@
 ﻿using FS.Asset.Players;
 using FS.Cores.MapGenerators;
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -12,9 +13,13 @@ namespace FS.Cores
 
         public GameState GameState { get; private set; } = GameState.Prepare;
 
+        public Action<GameState> OnGameStateUpdateEvent;
+
         private void Awake()
         {
             instance = this;
+
+            SetState(GameState.Prepare);
         }
 
         #region State
@@ -67,7 +72,7 @@ namespace FS.Cores
 
         private void GameEnd()
         {
-
+            OnGameStateUpdateEvent?.Invoke(GameState);
         }
         #endregion
 

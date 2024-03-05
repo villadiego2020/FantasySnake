@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64215157444c52d45a0901fe9405a9d6, type: 3}
   m_Name: Map
   m_EditorClassIdentifier: 
-  CellSize: 5
+  CellSize: 1
   SizeX: 16
   SizeY: 16
   Margin: 0.1
-  GridPrefab: {fileID: 919132149155446097, guid: b6e24f5ccfc7d7448a39d75b159a0386, type: 3}
+  GridPrefab: {fileID: 919132149155446097, guid: 6ba5073550428ce4a95d767332af414a, type: 3}

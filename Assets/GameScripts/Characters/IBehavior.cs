@@ -9,6 +9,9 @@ namespace FS.Cores
     public abstract class IBehavior : MonoBehaviour, IInitalize
     {
         public CharacterStat Stat;
+        public Vector2Int Coordinate;
+
+        [SerializeField] protected float m_Speed = 5f;
 
         public virtual CharacterType CharacterType => CharacterType.None;
         public bool IsDead => Stat.HP == 0;
@@ -39,7 +42,7 @@ namespace FS.Cores
 
         #endregion
 
-        public abstract void Spawned(object[] objects);
+        public abstract void Spawned(params object[] objects);
         public virtual void GetHit(IBehavior enemy)
         {
             DamageMessage damageMessage = this.TakeDamage(enemy);

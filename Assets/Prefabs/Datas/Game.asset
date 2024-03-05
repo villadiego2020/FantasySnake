@@ -12,9 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3560810ed5ef654194eca1a573c10aa, type: 3}
   m_Name: Game
   m_EditorClassIdentifier: 
-  NumberOfEntitySpawn: 10
+  StartCollectHeroSpawn: 5
+  StartMonsterSpawn: 20
   MinStat: 1
   MaxStat: 100
   GrowCoefficient: 10
-  ChanceHeroSpawn: 50
-  ChanceMonsterSpawn: 50
+  ChanceCollectHeroSpawn: 0.5
+  ChanceMonsterSpawn: 0.5
+  NumberOfObstacle: 10
+  ObstacleDatas:
+  - Prefab: {fileID: 6414236617259107797, guid: 65bfda0ecdb71a4498aae42a249f46cd, type: 3}
+    CellSize: {x: 1, y: 1}
+  - Prefab: {fileID: 6414236617259107797, guid: 285a60e869d6a7b4891a7b31a85bf16a, type: 3}
+    CellSize: {x: 2, y: 1}
+  Heroes:
+  - Prefab: {fileID: 3716611591941655708, guid: 60b6dba3b4a7a8846a726a6b3a23d75a, type: 3}
+    Stat:
+      HP: 50
+      Attack: 20
+  - Prefab: {fileID: 3716611591941655708, guid: 60b6dba3b4a7a8846a726a6b3a23d75a, type: 3}
+    Stat:
+      HP: 100
+      Attack: 10
+  Monsters:
+  - Prefab: {fileID: 3716611591941655708, guid: 02d3b97a2d41d4a458c03d1cf4624283, type: 3}
+    Stat:
+      HP: 200
+      Attack: 5

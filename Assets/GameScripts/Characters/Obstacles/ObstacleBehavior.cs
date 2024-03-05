@@ -1,4 +1,5 @@
 ﻿using FS.Cores;
+using UnityEngine;
 
 namespace FS.Characters.Obstacles
 {
