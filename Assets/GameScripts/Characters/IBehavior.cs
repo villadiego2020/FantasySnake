@@ -20,12 +20,13 @@ namespace FS.Cores
         protected float m_Speed = 5f;
 
         public virtual CharacterType CharacterType => CharacterType.None;
+        public CharacterState CharacterState { get; protected set; } = CharacterState.Idle;
         public bool IsDead => Stat.HP == 0;
 
         public Action<int, int, int> OnStatChangeEvent;
         public Action<int, int> OnHPChangeEvent;
-        public Action<CharacterType> OnDeadEvent;
-        public Action<DamageMessage> OnTakeDamageEvevnt;
+        public Action OnForceEndEvent;
+        public Action<CharacterType, IBehavior> OnDeadEvent;
 
         #region IInitalize
 
@@ -75,15 +76,16 @@ namespace FS.Cores
         {
             DamageMessage damageMessage = this.TakeDamage(enemy);
 
+            Spawner.Instance.CreateDamagePopup(damageMessage, gameObject.transform.position);
+            AudioManager.Instance.Hit();
             OnHPChangeEvent?.Invoke(Stat.MaxHP, Stat.HP);
-            OnTakeDamageEvevnt?.Invoke(damageMessage);
 
             if (damageMessage.IsDead)
             {
                 Unregister();
                 this.ResetStat();
-                MapGenerator.Instance.RemoveMember(this);
-                OnDeadEvent?.Invoke(CharacterType);
+                Generator.Instance.RemoveMember(this);
+                OnDeadEvent?.Invoke(CharacterType, this);
             }
         }
     }

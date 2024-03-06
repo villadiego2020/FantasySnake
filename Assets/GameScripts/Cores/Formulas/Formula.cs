@@ -35,6 +35,7 @@ namespace FS.Cores.Formulas
                 self.Stat.MaxHP = statModifier.MaxHP;
                 self.Stat.HP = statModifier.MaxHP;
                 self.Stat.Attack = statModifier.Attack;
+                self.Stat.AttackRate = statModifier.AttackRate;
             }
             else
             {

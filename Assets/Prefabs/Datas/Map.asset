@@ -16,4 +16,4 @@ MonoBehaviour:
   SizeX: 16
   SizeY: 16
   Margin: 0.1
-  GridPrefab: {fileID: 919132149155446097, guid: 6ba5073550428ce4a95d767332af414a, type: 3}
+  GridPrefab: {fileID: 2448220222021542103, guid: d0b9ce2da153e324180f3adff2628dab, type: 3}

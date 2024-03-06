@@ -4,6 +4,7 @@ using FS.Cores;
 using FS.Cores.MapGenerators;
 using FS.Cores.Players;
 using FS.UIs;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -138,8 +139,8 @@ namespace FS.Asset.Players
                 lastHero.Clone(tmpUpperOrder, tmpUpperPreviousDirection, tmpUpperPreviousCoordinate, tmpUpperTargetPosition);
                 tmpUpperHero.Clone(tmpLastOrder, tmpLastPreviousDirection, tmpLastPreviousCoordinate, tmpLastTargetPosition);
 
-                Vector3 newUpperPosition = MapGenerator.Instance.UpdateGrid(tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHero);
-                Vector3 newLastPosition = MapGenerator.Instance.UpdateGrid(tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, lastHero);
+                Vector3 newUpperPosition = Generator.Instance.UpdateGrid(tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHero);
+                Vector3 newLastPosition = Generator.Instance.UpdateGrid(tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, lastHero);
 
                 tmpUpperHero.transform.position = newUpperPosition;
                 lastHero.transform.position = newLastPosition;
@@ -153,6 +154,7 @@ namespace FS.Asset.Players
             foreach (var hero in Heroes)
             {
                 hero.Order = order++;
+                hero.OnForceEndEvent = ForceEnd;
                 hero.OnDeadEvent = Dead;
                 hero.OnTriggerWithHeroEvent = TriggerWithHero;
                 hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
@@ -167,7 +169,7 @@ namespace FS.Asset.Players
 
         private void SpawnControlHero()
         {
-            IBehavior newHero = MapGenerator.Instance.SpawnControlHero();
+            IBehavior newHero = Generator.Instance.SpawnControlHero();
 
             SetHeroData(newHero);
         }
@@ -175,6 +177,7 @@ namespace FS.Asset.Players
         private void SetHeroData(IBehavior newHero)
         {
             HeroesBehavior hero = newHero as HeroesBehavior;
+            hero.OnForceEndEvent = ForceEnd;
             hero.OnDeadEvent = Dead;
             hero.OnTriggerWithHeroEvent = TriggerWithHero;
             hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
@@ -186,20 +189,34 @@ namespace FS.Asset.Players
 
         #region Callback
 
-        private void Dead(CharacterType type)
+        private void ForceEnd()
+        {
+            GameManager.instance.SetState(GameState.End);
+        }
+
+        public void Dead(CharacterType type, IBehavior dead)
         {
             if (type == CharacterType.Hero)
             {
-                GameManager.instance.SetState(GameState.End);
+                HeroesBehavior heroBehavior = dead as HeroesBehavior;
+                Heroes.Remove(heroBehavior);
+                Generator.Instance.RemoveMember(dead);
+                Destroy(dead.gameObject);
+
+                CheckResult();
+            }
+            else if(type == CharacterType.Monster)
+            {
+                Generator.Instance.RemoveMember(dead);
+                Destroy(dead.gameObject);
+                Generator.Instance.SpawnMonster();
             }
         }
 
         private void TriggerWithHero(IBehavior newHero)
         {
-
-
             SetHeroData(newHero);
-            MapGenerator.Instance.SpawnCollectHero();
+            Generator.Instance.SpawnCollectHero();
         }
 
         private void TriggerWithObstacle(IBehavior hero, IBehavior obstacle)
@@ -207,16 +224,16 @@ namespace FS.Asset.Players
             HeroesBehavior heroBehavior = hero as HeroesBehavior;
             Heroes.Remove(heroBehavior);
 
-            MapGenerator.Instance.RemoveMember(heroBehavior);
+            Generator.Instance.RemoveMember(heroBehavior);
 
             Destroy(hero.gameObject);
 
-            CheckGameResult();
+            CheckResult();
         }
 
         #endregion
 
-        private void CheckGameResult()
+        private void CheckResult()
         {
             if(Heroes.Count == 0)
             {

@@ -3,6 +3,7 @@
     public enum Stat
     {
         HP,
-        Attack
+        Attack,
+        AttackRate
     }
 }

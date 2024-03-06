@@ -67,8 +67,8 @@ namespace FS.Cores
 
         private IEnumerator GamePrepare()
         {
-            MapGenerator.Instance.Initialize();
-            yield return new WaitUntil(() => MapGenerator.Instance.IsDone);
+            Generator.Instance.Initialize();
+            yield return new WaitUntil(() => Generator.Instance.IsDone);
             yield return new WaitForEndOfFrame();
 
             PlayerController.Instance.Initialize();

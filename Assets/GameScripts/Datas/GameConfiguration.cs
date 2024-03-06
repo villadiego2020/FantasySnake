@@ -1,4 +1,5 @@
 ﻿using FS.Characters;
+using FS.Cores;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,24 +12,24 @@ namespace FS.Datas
         public CharacterData StarterControlHero;
 
         [Header("Hero")]
-        public float MovementSpeed;
-        public int StartCollectHeroSpawn;
-        public GrownUpData GrownCoefficient;
-        public List<ChanceSpawnData> ChanceCollectHeroSpawn;
+        public Character Hero;
 
         [Header("Monster")]
-        public int StartMonsterSpawn;
-        public List<ChanceSpawnData> ChanceMonsterSpawn;
+        public Character Monster;
 
         [Header("Obstacle")]
         public int NumberOfObstacle;
         public ObstacleData[] ObstacleDatas;
+    }
 
-        [Header("Hero")]
-        public CharacterData[] Heroes;
-
-        [Header("Monster")]
-        public CharacterData[] Monsters;
+    [System.Serializable]
+    public struct Character
+    {
+        public float Movmenet;
+        public int StartAmount;
+        public GrownUpData GrownCoefficient;
+        public List<ChanceSpawnData> ChanceSpawn;
+        public CharacterData[] Data;
     }
 
     [System.Serializable]
