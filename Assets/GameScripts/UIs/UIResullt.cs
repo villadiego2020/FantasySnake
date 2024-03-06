@@ -32,6 +32,11 @@ namespace FS.UIs
             m_CanvasGroup.alpha = 1.0f;
         }
 
+        public void Close()
+        {
+            m_CanvasGroup.alpha = 0.0f;
+        }
+
         public void SetMonsterDefeat(int amount)
         {
             m_MonsterDefeat.text = $"{amount}";

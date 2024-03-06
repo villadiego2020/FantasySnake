@@ -11,6 +11,7 @@ namespace FS.Cores
     {
         public static GameManager instance {  get; private set; }
 
+        public float GameTime { get; private set; } = 0;
         public GameState GameState { get; private set; } = GameState.Prepare;
 
         public Action<GameState> OnGameStateUpdateEvent;
@@ -20,6 +21,21 @@ namespace FS.Cores
             instance = this;
 
             SetState(GameState.Prepare);
+        }
+
+        private void Update()
+        {
+            if (GameState != GameState.Start)
+                return;
+
+            IncreaseGameTime();
+        }
+
+        private void IncreaseGameTime()
+        {
+            GameTime += Time.deltaTime;
+
+
         }
 
         #region State
@@ -45,6 +61,8 @@ namespace FS.Cores
                     GameEnd();
                     break;
             }
+
+            OnGameStateUpdateEvent?.Invoke(GameState);
         }
 
         private IEnumerator GamePrepare()
@@ -62,7 +80,6 @@ namespace FS.Cores
 
         private void GameStart()
         {
-
         }
 
         private void GamePause()
@@ -72,7 +89,7 @@ namespace FS.Cores
 
         private void GameEnd()
         {
-            OnGameStateUpdateEvent?.Invoke(GameState);
+
         }
         #endregion
 

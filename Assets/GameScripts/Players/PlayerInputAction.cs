@@ -8,10 +8,9 @@ namespace FS.Cores.Players
     public class PlayerInputAction : MonoBehaviour
     {
         public static PlayerInputAction Instance;
-        [SerializeField] private InputActionAsset m_InputAsset;
 
         public Action<Vector2> OnMoveEvent;
-        public Vector2 MoveInput { get; private set; } = Vector2.zero;
+        public Action OnSwitchHeroEvent;
 
         private void Awake()
         {
@@ -30,6 +29,11 @@ namespace FS.Cores.Players
         private void OnMovevment(InputValue value)
         {
             OnMoveEvent?.Invoke(value.Get<Vector2>());
+        }
+
+        private void OnSwitchHero(InputValue value)
+        {
+            OnSwitchHeroEvent?.Invoke();
         }
     }
 }

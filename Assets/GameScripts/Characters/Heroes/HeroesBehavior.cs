@@ -1,6 +1,7 @@
 ﻿using FS.Cores;
 using FS.Cores.Formulas;
 using FS.Cores.MapGenerators;
+using FS.UIs;
 using System;
 using UnityEngine;
 
@@ -10,12 +11,18 @@ namespace FS.Characters.Heroes
     {
         public override CharacterType CharacterType => CharacterType.Hero;
 
+        [Header("Additional - UI")]
+        [SerializeField] private UICollectableHero m_UICollectableHero;
+        [SerializeField] private GameObject m_FrontBase;
+
+        [Header("Other")]
         [SerializeField] protected LayerMask m_LayerMask;
-        public int Order;
+
         public bool IsCollected;
+        public int Order; // Order = 1 is Front Line
         public Vector2 PreviousDirection;
         public Vector2Int PreviousCoordinate;
-        private Vector3 m_TargetPosition;
+        public Vector3 TargetPosition;
 
         public Action<IBehavior> OnTriggerWithHeroEvent;
         public Action<IBehavior, IBehavior> OnTriggerWithObstacleEvent;
@@ -28,20 +35,64 @@ namespace FS.Characters.Heroes
             Move();
         }
 
-        private void Move()
+        public override void Spawned(params object[] objects)
         {
-            transform.position = Vector3.MoveTowards(transform.position, m_TargetPosition, m_Speed * Time.deltaTime);
+            Register();
+
+            CharacterStat stat = objects[0] as CharacterStat;
+
+            this.SetMinMaxStat(CharacterGrownup.Data.MinMaxHPStat.MinMaxStat, CharacterGrownup.Data.MinMaxAttackStat.MinMaxStat);
+            this.ApplyStat(stat, true);
+
+            m_Speed = (float)objects[1];
+
+            PreviousCoordinate = Coordinate;
+            TargetPosition = transform.position;
+            SetFrontState();
+
+            OnStatChangeEvent?.Invoke(Stat.MaxHP, Stat.HP, Stat.Attack);
         }
 
-        public void SetLeaderMove(Vector2 direction)
+        public override void GetHit(IBehavior enemy)
         {
-            if (direction == Vector2.zero)
-                return;
+            base.GetHit(enemy);
+        }
 
+        private void Move()
+        {
+            transform.position = Vector3.MoveTowards(transform.position, TargetPosition, m_Speed * Time.deltaTime);
+        }
+
+        public void Collect()
+        {
+            IsCollected = true;
+            m_UICollectableHero.Close();
+            m_UIStat.Open();
+
+            SetFrontState();
+        }
+
+        public void Clone(int order, Vector2 previousDirection, Vector2Int previousCoordinate, Vector3 targetPosition)
+        {
+            Order = order;
+            PreviousDirection = previousDirection;
+            PreviousCoordinate = previousCoordinate;
+            TargetPosition = targetPosition;
+
+            SetFrontState();
+        }
+
+        public void SetFrontState()
+        {
+            m_FrontBase.SetActive(Order == 1);
+        }
+
+        public void SetFrontMove(Vector2 direction)
+        {
             Vector2Int tmpCoordinate = Coordinate;
             Vector3 position = MapGenerator.Instance.GetNextGrid(Coordinate.x, Coordinate.y, direction, PreviousDirection);
 
-            if (position != m_TargetPosition)
+            if (position != TargetPosition)
             {
                 PreviousDirection = direction;
                 PreviousCoordinate = tmpCoordinate;
@@ -51,32 +102,16 @@ namespace FS.Characters.Heroes
                 PreviousCoordinate = Coordinate;
             }
 
-            m_TargetPosition = position;
+            TargetPosition = position;
         }
 
-        public void SetFollowMove(Vector2 direction, Vector2Int coordinate)
+        public void SetFollowerMove(Vector2Int coordinate)
         {
-            if (direction == Vector2.zero)
-                return;
-
             PreviousCoordinate = Coordinate;
-            m_TargetPosition = MapGenerator.Instance.UpdateGrid(Coordinate.x, Coordinate.y, coordinate.x, coordinate.y, this);
+            TargetPosition = MapGenerator.Instance.UpdateGrid(Coordinate.x, Coordinate.y, coordinate.x, coordinate.y, this);
         }
 
-        public override void Spawned(params object[] objects)
-        {
-            CharacterStat stat = objects[0] as CharacterStat;
-            this.ApplyStat(stat);
-
-            PreviousCoordinate = Coordinate;
-            m_TargetPosition = transform.position;
-        }
-
-        public override void GetHit(IBehavior enemy)
-        {
-            base.GetHit(enemy);
-        }
-
+        #region Trigger
         public void OnTriggerEnter(Collider other)
         {
             if ((m_LayerMask.value & (1 << other.transform.gameObject.layer)) > 0)
@@ -116,5 +151,6 @@ namespace FS.Characters.Heroes
                 }
             }
         }
+        #endregion
     }
 }

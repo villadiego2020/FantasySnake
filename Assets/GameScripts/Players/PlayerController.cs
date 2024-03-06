@@ -1,12 +1,9 @@
 ﻿using FS.Characters;
 using FS.Characters.Heroes;
-using FS.Characters.Obstacles;
 using FS.Cores;
 using FS.Cores.MapGenerators;
 using FS.Cores.Players;
-using FS.Datas;
 using FS.UIs;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,9 +13,6 @@ namespace FS.Asset.Players
     public class PlayerController : IJobState
     {
         public static PlayerController Instance { get; private set; }
-
-        [Header("Hero")]
-        [SerializeField] private CharacterData m_CharacterData;
 
         [Space(5)]
         [Header("Data")]
@@ -36,7 +30,6 @@ namespace FS.Asset.Players
         #region IJobState
         public override void Initialize(params object[] objects)
         {
-            SpawnControlHero();
             Register();
 
             IsDone = true;
@@ -49,57 +42,122 @@ namespace FS.Asset.Players
 
         public override void Register()
         {
-            PlayerInputAction.Instance.OnMoveEvent += Move;
             GameManager.instance.OnGameStateUpdateEvent += GameStateChanged;
+
+            PlayerInputAction.Instance.OnMoveEvent += Move;
+            PlayerInputAction.Instance.OnSwitchHeroEvent += SwitchHero;
         }
 
         public override void Unregister()
         {
-            PlayerInputAction.Instance.OnMoveEvent -= Move;
             GameManager.instance.OnGameStateUpdateEvent -= GameStateChanged;
+
+            PlayerInputAction.Instance.OnMoveEvent -= Move;
+            PlayerInputAction.Instance.OnSwitchHeroEvent -= SwitchHero;
         }
 
         #region Event
-        private void Move(Vector2 direction)
-        {
-            if (Heroes.Count == 0)
-                return;
-
-            for (int i = 0; i < Heroes.Count; i++)
-            {
-                if(i == 0)
-                {
-                    Heroes[i].SetLeaderMove(direction);
-                }
-                else
-                {
-                    Vector2Int preCoordinate = Heroes[i - 1].PreviousCoordinate;
-                    Vector2Int currentCoordinate = Heroes[i - 1].Coordinate;
-
-                    if (preCoordinate == currentCoordinate)
-                        break;
-
-                    Heroes[i].SetFollowMove(direction, preCoordinate);
-                }
-            }
-        }
 
         private void GameStateChanged(GameState state)
         {
             switch (state)
             {
-                case GameState.None:
-                    break;
                 case GameState.Prepare:
                     break;
                 case GameState.Start:
-                    break;
+                    {
+                        SpawnControlHero();
+                        break;
+                    }
                 case GameState.Pause:
                     break;
                 case GameState.End:
-                    Unregister();
-                    m_UIResult.Open();
-                    break;
+                    {
+                        Unregister();
+                        m_UIResult.Open();
+                        break;
+                    }
+            }
+        }
+
+        private void Move(Vector2 direction)
+        {
+            if (Heroes.Count == 0 || direction == Vector2.zero)
+                return;
+
+            for (int i = 0; i < Heroes.Count; i++)
+            {
+                HeroesBehavior hero = Heroes[i];
+
+                if (i == 0) // Front Move
+                {
+                    hero.SetFrontMove(direction);
+                }
+                else // Move Follow Previous Hero
+                {
+                    HeroesBehavior previousHero = Heroes[i - 1]; // Previous Hero
+                    Vector2Int previousCoordinate = previousHero.PreviousCoordinate;
+                    Vector2Int currentCoordinate = previousHero.Coordinate;
+
+                    if (previousCoordinate == currentCoordinate)
+                        break;
+
+                    hero.SetFollowerMove(previousCoordinate);
+                }
+            }
+        }
+
+        private void SwitchHero()
+        {
+            if(Heroes.Count <= 1) return;
+
+            HeroesBehavior lastHero = Heroes[Heroes.Count - 1]; // Last Hero
+
+            for (int i = Heroes.Count - 2; i >= 0; i--) // Switch by start from upper last hero
+            {
+                HeroesBehavior tmpUpperHero = Heroes[i];
+
+                Vector2Int tmpLastHeroCoordinate = lastHero.Coordinate;
+                Vector2Int tmpUpperHeroCoordinate = tmpUpperHero.Coordinate;
+
+                int tmpUpperOrder = tmpUpperHero.Order;
+                int tmpLastOrder = lastHero.Order;
+
+                Vector2 tmpUpperPreviousDirection = tmpUpperHero.PreviousDirection;
+                Vector2 tmpLastPreviousDirection = lastHero.PreviousDirection;
+
+                Vector2Int tmpUpperPreviousCoordinate = tmpUpperHero.PreviousCoordinate;
+                Vector2Int tmpLastPreviousCoordinate = lastHero.PreviousCoordinate;
+
+                Vector3 tmpUpperTargetPosition = tmpUpperHero.TargetPosition;
+                Vector3 tmpLastTargetPosition = lastHero.TargetPosition;
+
+                Heroes[i] = lastHero;
+                Heroes[i + 1] = tmpUpperHero;
+
+                lastHero.Clone(tmpUpperOrder, tmpUpperPreviousDirection, tmpUpperPreviousCoordinate, tmpUpperTargetPosition);
+                tmpUpperHero.Clone(tmpLastOrder, tmpLastPreviousDirection, tmpLastPreviousCoordinate, tmpLastTargetPosition);
+
+                Vector3 newUpperPosition = MapGenerator.Instance.UpdateGrid(tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHero);
+                Vector3 newLastPosition = MapGenerator.Instance.UpdateGrid(tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, lastHero);
+
+                tmpUpperHero.transform.position = newUpperPosition;
+                lastHero.transform.position = newLastPosition;
+            }
+        }
+
+        private void SortHeros()
+        {
+            int order = 1;
+
+            foreach (var hero in Heroes)
+            {
+                hero.Order = order++;
+                hero.OnDeadEvent = Dead;
+                hero.OnTriggerWithHeroEvent = TriggerWithHero;
+                hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
+
+                hero.SetFrontState();
             }
         }
 
@@ -109,16 +167,21 @@ namespace FS.Asset.Players
 
         private void SpawnControlHero()
         {
-            GameObject heroObj = Instantiate(m_CharacterData.Prefab);
-            HeroesBehavior hero = heroObj.GetComponent<HeroesBehavior>();
+            IBehavior newHero = MapGenerator.Instance.SpawnControlHero();
 
-            GridValue gridValue = MapGenerator.Instance.GetRandomPosition();
-            MapGenerator.Instance.SetMember(gridValue.Coordinate.x, gridValue.Coordinate.y, hero);
+            SetHeroData(newHero);
+        }
 
-            hero.transform.position = gridValue.Position;
-            hero.Spawned(m_CharacterData.Stat);
+        private void SetHeroData(IBehavior newHero)
+        {
+            HeroesBehavior hero = newHero as HeroesBehavior;
+            hero.OnDeadEvent = Dead;
+            hero.OnTriggerWithHeroEvent = TriggerWithHero;
+            hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
+            hero.Order = Heroes.Count + 1;
+            hero.Collect();
 
-            TriggerWithHero(hero);
+            Heroes.Add(hero);
         }
 
         #region Callback
@@ -133,20 +196,18 @@ namespace FS.Asset.Players
 
         private void TriggerWithHero(IBehavior newHero)
         {
-            HeroesBehavior hero = newHero as HeroesBehavior;
-            hero.OnDeadEvent = Dead;
-            hero.OnTriggerWithHeroEvent = TriggerWithHero;
-            hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
-            hero.Order = Heroes.Count + 1;
-            hero.IsCollected = true;
 
-            Heroes.Add(hero);
+
+            SetHeroData(newHero);
+            MapGenerator.Instance.SpawnCollectHero();
         }
 
         private void TriggerWithObstacle(IBehavior hero, IBehavior obstacle)
         {
             HeroesBehavior heroBehavior = hero as HeroesBehavior;
             Heroes.Remove(heroBehavior);
+
+            MapGenerator.Instance.RemoveMember(heroBehavior);
 
             Destroy(hero.gameObject);
 
@@ -164,19 +225,6 @@ namespace FS.Asset.Players
             else
             {
                 SortHeros();
-            }
-        }
-
-        private void SortHeros()
-        {
-            int order = 1;
-
-            foreach (var hero in Heroes)
-            {
-                hero.Order = order++;
-                hero.OnDeadEvent = Dead;
-                hero.OnTriggerWithHeroEvent = TriggerWithHero;
-                hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
             }
         }
     }

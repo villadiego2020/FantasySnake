@@ -3,6 +3,9 @@ using FS.Characters.Heroes;
 using FS.Characters.Obstacles;
 using FS.Datas;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -41,7 +44,8 @@ namespace FS.Cores.MapGenerators
 
             StartCoroutine(nameof(GenerateGrid));
             StartCoroutine(nameof(GenerateObstacle));
-            StartCoroutine(nameof(GenerateCollectHero));
+            StartCoroutine(GenerateCollectHero(m_GameConfiguration.StartCollectHeroSpawn));
+            StartCoroutine(nameof(GenerateMonster));
         }
 
         public override void Deinitialize()
@@ -130,25 +134,28 @@ namespace FS.Cores.MapGenerators
             m_IsObstacleCreated = true;
         }
 
-        private IEnumerator GenerateCollectHero()
+        private IEnumerator GenerateCollectHero(int amount)
         {
             yield return new WaitUntil(() => m_IsObstacleCreated);
 
-            for (int i = 0; i < m_GameConfiguration.StartCollectHeroSpawn; i++)
+            for (int i = 0; i < amount; i++)
             {
-                int randomHero = 0;
+                int randomHero = Random.Range(0, m_GameConfiguration.Heroes.Length - 1);
                 CharacterData characterData = m_GameConfiguration.Heroes[randomHero];
                 GridValue gridValue = GetRandomPosition();
 
                 GameObject characterObj = Instantiate(characterData.Prefab);
                 characterObj.transform.position = gridValue.Position;
 
-                HeroesBehavior obstacleBehavior = characterObj.GetComponent<HeroesBehavior>();
-                obstacleBehavior.IsCollected = false;
-                obstacleBehavior.Order = -1;
-                obstacleBehavior.Spawned(characterData.Stat);
+                HeroesBehavior hero = characterObj.GetComponent<HeroesBehavior>();
+                hero.IsCollected = false;
+                hero.Order = -1;
+                hero.CharacterGrownup.Self = hero;
+                hero.CharacterGrownup.Data = m_GameConfiguration.GrownCoefficient;
+                hero.CharacterGrownup.PreviousUpdateStatTime = m_GameConfiguration.GrownCoefficient.GrownEveryTime;
+                hero.Spawned(characterData.Stat, m_GameConfiguration.MovementSpeed);
 
-                SetMember(gridValue.Coordinate.x, gridValue.Coordinate.y, obstacleBehavior);
+                SetMember(gridValue.Coordinate.x, gridValue.Coordinate.y, hero);
 
                 yield return new WaitForEndOfFrame();
             }
@@ -164,6 +171,46 @@ namespace FS.Cores.MapGenerators
             //{
 
             //}
+        }
+
+        public IBehavior SpawnControlHero()
+        {
+            GridValue gridValue = GetRandomPosition();
+            GameObject heroObj = Instantiate(m_GameConfiguration.StarterControlHero.Prefab);
+            HeroesBehavior hero = heroObj.GetComponent<HeroesBehavior>();
+            hero.CharacterGrownup.Self = hero;
+            hero.CharacterGrownup.Data = m_GameConfiguration.GrownCoefficient;
+            hero.CharacterGrownup.PreviousUpdateStatTime = m_GameConfiguration.GrownCoefficient.GrownEveryTime;
+            hero.transform.position = gridValue.Position;
+            hero.Spawned(m_GameConfiguration.StarterControlHero.Stat, m_GameConfiguration.MovementSpeed);
+
+            SetMember(gridValue.Coordinate.x, gridValue.Coordinate.y, hero);
+
+            return hero;
+        }
+
+        #endregion
+
+        #region Spawn with channce
+
+        public void SpawnCollectHero()
+        {
+            int random = Random.Range(1, 100);
+            int amount = 0;
+
+            List<ChanceSpawnData> datas = m_GameConfiguration.ChanceCollectHeroSpawn;
+            datas = datas.OrderByDescending(x => x.Chance).ToList();
+
+            foreach (ChanceSpawnData data in datas)
+            {
+                if(random <= data.Chance)
+                {
+                    amount = data.Amount;
+                    break;
+                }
+            }
+
+            StartCoroutine(GenerateCollectHero(amount));
         }
 
         #endregion
@@ -211,8 +258,8 @@ namespace FS.Cores.MapGenerators
                 {
                     if (m_Grids[i, j].Member == remover)
                     {
-                        m_Grids[i, j].Member = null;
                         m_Grids[i, j].Member.Coordinate = Vector2Int.one * -1;
+                        m_Grids[i, j].Member = null;
                         break;
                     }
                 }
