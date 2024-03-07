@@ -33,9 +33,8 @@ Fantasy Snake
       - Amount: จำนวนที่จะ Spawn ขึ้นมา
     - Data: List ของ Hero และ Monster
    
-![Collect Hero Config](https://github.com/villadiego2020/FantasySnake/assets/33424275/301b691b-aa4d-4de1-b060-ef4084daf82f)
-![Monster Config](https://github.com/villadiego2020/FantasySnake/assets/33424275/b195e96e-cd2c-442c-a30e-9f013ff9052c)
-
+![Monster Config](https://github.com/villadiego2020/FantasySnake/assets/33424275/c7ba0933-12ea-4460-bdd0-d9642eb1946c)
+![Collect Hero Config](https://github.com/villadiego2020/FantasySnake/assets/33424275/d823b085-5976-484f-8b81-6a98ccaadd08)
 
 3. การตั้งค่า Obstacle
   - Number of Obstacle: จำนวนการ Spawn Obstacle ตอนเริ่มเกม
