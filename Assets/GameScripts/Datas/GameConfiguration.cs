@@ -1,5 +1,4 @@
 ﻿using FS.Characters;
-using FS.Cores;
 using FS.Cores.Generators;
 using System.Collections.Generic;
 using UnityEngine;
@@ -49,7 +48,6 @@ namespace FS.Datas
     public struct GrownValue
     {
         public Vector2Int MinMaxStat;
-        public float Value;
     }
 
     [System.Serializable]

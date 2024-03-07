@@ -57,11 +57,15 @@ namespace FS.Cores
 
         protected void CharacterReadyToGrown(GrownUpData data)
         {
+            int increaseMaxHP = UnityEngine.Random.Range(data.MinMaxHPStat.MinMaxStat.x, data.MinMaxHPStat.MinMaxStat.y);
+            int increaseHP = UnityEngine.Random.Range(data.MinMaxHPStat.MinMaxStat.x, data.MinMaxHPStat.MinMaxStat.y) / 2;
+            int increaseAttackHP = UnityEngine.Random.Range(data.MinMaxAttackStat.MinMaxStat.x, data.MinMaxAttackStat.MinMaxStat.y);
+
             CharacterStat stat = new CharacterStat()
             {
-                MaxHP = Mathf.FloorToInt(data.MinMaxHPStat.Value),
-                HP = Mathf.FloorToInt(data.MinMaxHPStat.Value),
-                Attack = Mathf.FloorToInt(data.MinMaxAttackStat.Value),
+                MaxHP = increaseMaxHP,
+                HP = increaseHP,
+                Attack = increaseMaxHP,
             };
 
             this.ApplyStat(stat);

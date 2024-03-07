@@ -52,7 +52,6 @@ namespace FS.Characters.Heroes
 
             CharacterStat stat = objects[0] as CharacterStat;
 
-            this.SetMinMaxStat(CharacterGrownup.Data.MinMaxHPStat.MinMaxStat, CharacterGrownup.Data.MinMaxAttackStat.MinMaxStat);
             this.ApplyStat(stat, true);
 
             m_Speed = (float)objects[1];

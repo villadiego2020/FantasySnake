@@ -27,10 +27,8 @@ MonoBehaviour:
       GrownRate: 2.5
       MinMaxHPStat:
         MinMaxStat: {x: 1, y: 500}
-        Value: 10
       MinMaxAttackStat:
         MinMaxStat: {x: 1, y: 140}
-        Value: 2
     ChanceSpawn:
     - Chance: 100
       Amount: 1
@@ -57,10 +55,8 @@ MonoBehaviour:
       GrownRate: 2
       MinMaxHPStat:
         MinMaxStat: {x: 1, y: 500}
-        Value: 15
       MinMaxAttackStat:
         MinMaxStat: {x: 1, y: 50}
-        Value: 20
     ChanceSpawn:
     - Chance: 100
       Amount: 1

@@ -9,21 +9,6 @@ namespace FS.Cores.Formulas
     /// </summary>
     public static class Formula
     {
-        private static Vector2Int MinMaxHP;
-        private static Vector2Int MinMaxAttack;
-
-        /// <summary>
-        /// For every change stat will block with min and max stat
-        /// </summary>
-        /// <param name="self"></param>
-        /// <param name="min"></param>
-        /// <param name="max"></param>
-        public static void SetMinMaxStat(this IBehavior self, Vector2Int minMaxHP, Vector2Int minMaxAttack)
-        {
-            MinMaxHP = minMaxHP;
-            MinMaxAttack = minMaxAttack;
-        }
-
         /// <summary>
         /// This must be call when character need to apply stat
         /// </summary>
@@ -39,9 +24,9 @@ namespace FS.Cores.Formulas
             }
             else
             {
-                self.Stat.MaxHP = Mathf.Clamp(self.Stat.MaxHP + statModifier.MaxHP, MinMaxHP.x, MinMaxHP.y);
-                self.Stat.HP = Mathf.Clamp(self.Stat.HP + statModifier.HP, MinMaxHP.x, MinMaxHP.y);
-                self.Stat.Attack = Mathf.Clamp(self.Stat.Attack + statModifier.Attack, MinMaxAttack.x, MinMaxAttack.y);
+                self.Stat.MaxHP += statModifier.MaxHP;
+                self.Stat.HP = Mathf.Clamp(self.Stat.HP + statModifier.HP, 0, self.Stat.MaxHP);
+                self.Stat.Attack += statModifier.Attack;
             }
         }
 

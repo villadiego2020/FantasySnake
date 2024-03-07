@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64215157444c52d45a0901fe9405a9d6, type: 3}
   m_Name: Map
   m_EditorClassIdentifier: 
-  CellSize: 1
   SizeX: 16
   SizeY: 16
   Margin: 0.1
