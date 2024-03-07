@@ -27,8 +27,7 @@ Fantasy Snake
       - Grown Every Time: ในทุกๆ x วินาที จะทำการเพิ่มค่าความสามารถให้ Monster และ Hero
       - Grown Rate: อัตราเร่งในการเติมโต ใช้กับเวลาในการ ถ้า Rate ยิ่งเยอะ เวลาในการเติบโตจะไวขึ้น
       - Min Max HP Stat และ Min Max Attack
-        - Min Max Stat: ช่วงมค่า Stat ที่จะเพิ่มขึ้น 
-        - Value: ต่อการเพิ่ม 1 ครั้งจะเพิ่มค่า stat เท่าไร (จะไม่เกินค่า Min/Max) 
+        - Min Max Stat: ใช้สุ่มช่วงมค่า Stat ที่จะเพิ่มขึ้น 
     - Chance Spawn List ของ โอกาสที่จะ Spawn ขึ้นมาว่าจะ Spawn กี่ตัว
       - Chance: โอกาสที่จะสุ่มเกิด
       - Amount: จำนวนที่จะ Spawn ขึ้นมา
