@@ -1,5 +1,5 @@
 # FantasySnake
-Fantasy Snake
+Unity Version 2022.3.20f1
 
 1. การตั้งค่า Grid 
   - SizeX: _จำนวนช่องแถว X_
