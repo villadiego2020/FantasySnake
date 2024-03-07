@@ -2,13 +2,14 @@ using FS.Asset.Players;
 using FS.Characters.Heroes;
 using FS.Characters.Monsters;
 using FS.Characters.Obstacles;
+using FS.Characters.Turrets;
 using FS.Datas;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace FS.Cores.MapGenerators
+namespace FS.Cores.Generators
 {
     [DefaultExecutionOrder(ScriptOrders.MAP_GENERATOR_ORDER)]
     public class Generator : IJobState
@@ -24,12 +25,16 @@ namespace FS.Cores.MapGenerators
         [SerializeField] private GameConfiguration m_GameConfiguration;
         [SerializeField] private GameObject m_ObstacleParent;
 
+        [Header("Turret")]
+        [SerializeField] private Turret[] m_Turrets;
+
         private GridValue[,] m_Grids;
 
         private bool m_IsGridCreated;
         private bool m_IsObstacleCreated;
         private bool m_IsCollectHeroCreated;
         private bool m_IsMonsterCreated;
+        private bool m_IsTurretInited;
 
         private void Awake()
         {
@@ -46,6 +51,7 @@ namespace FS.Cores.MapGenerators
             StartCoroutine(nameof(GenerateObstacle));
             StartCoroutine(GenerateCollectHero(m_GameConfiguration.Hero.StartAmount));
             StartCoroutine(GenerateMonster(m_GameConfiguration.Monster.StartAmount));
+            StartCoroutine(nameof(GenerateTurret));
         }
 
         public override void Deinitialize()
@@ -73,7 +79,11 @@ namespace FS.Cores.MapGenerators
         /// <returns></returns>
         private IEnumerator InitializeState()
         {
-            yield return new WaitUntil(() => m_IsGridCreated && m_IsObstacleCreated && m_IsCollectHeroCreated && m_IsMonsterCreated);
+            yield return new WaitUntil(() => m_IsGridCreated && 
+            m_IsObstacleCreated && 
+            m_IsCollectHeroCreated &&
+            m_IsMonsterCreated &&
+            m_IsTurretInited);
 
             IsDone = true;
         }
@@ -94,14 +104,14 @@ namespace FS.Cores.MapGenerators
 
                     Vector3 position = new Vector3
                     {
-                        x = i * m_Config.CellSize,
+                        x = i,
                         y = 0,
-                        z = j * m_Config.CellSize
+                        z = j
                     };
 
                     GameObject blockObj = Instantiate(m_Config.GridPrefab);
                     blockObj.transform.position = position;
-                    blockObj.transform.localScale = Vector3.one * (m_Config.CellSize - m_Config.Margin);
+                    blockObj.transform.localScale = Vector3.one * (1 - m_Config.Margin);
                     blockObj.transform.parent = m_GridParent.transform;
 
                     m_Grids[i, j] = new GridValue(coordinate, position);
@@ -125,19 +135,25 @@ namespace FS.Cores.MapGenerators
 
             for (int i = 0; i < m_GameConfiguration.NumberOfObstacle; i++)
             {
-                int randomCellSize = 0; //Random.Range(0, m_GameConfiguration.ObstacleDatas.Length);
+                int randomCellSize = Random.Range(0, m_GameConfiguration.ObstacleDatas.Length);
                 ObstacleData obstacleData = m_GameConfiguration.ObstacleDatas[randomCellSize];
-                GridValue gridValue = GetRandomPosition();
+                List<GridValue> grids = GetRandomPosition(obstacleData.CellSizeType);
 
                 GameObject obstacleObj = Instantiate(obstacleData.Prefab);
                 obstacleObj.transform.parent = m_ObstacleParent.transform;
-                obstacleObj.transform.position = gridValue.Position;
+                obstacleObj.transform.position = FindAveragePosition(grids);
 
                 ObstacleBehavior obstacleBehavior = obstacleObj.GetComponent<ObstacleBehavior>();
-                AddMember(gridValue.Coordinate.x, gridValue.Coordinate.y, obstacleBehavior);
+                
+                foreach (var grid in grids)
+                {
+                    AddMember(grid.Coordinate.x, grid.Coordinate.y, obstacleBehavior);
+                }
 
                 yield return new WaitForEndOfFrame();
             }
+
+            yield return new WaitForEndOfFrame();
 
             m_IsObstacleCreated = true;
         }
@@ -153,7 +169,7 @@ namespace FS.Cores.MapGenerators
 
             for (int i = 0; i < amount; i++)
             {
-                int random = Random.Range(0, m_GameConfiguration.Hero.Data.Length - 1);
+                int random = Random.Range(0, m_GameConfiguration.Hero.Data.Length);
                 CharacterData characterData = m_GameConfiguration.Hero.Data[random];
 
                 GameObject characterObj = Instantiate(characterData.Prefab);
@@ -178,7 +194,7 @@ namespace FS.Cores.MapGenerators
 
             for (int i = 0; i < amount; i++)
             {
-                int random = Random.Range(0, m_GameConfiguration.Monster.Data.Length - 1);
+                int random = Random.Range(0, m_GameConfiguration.Monster.Data.Length);
                 CharacterData characterData = m_GameConfiguration.Monster.Data[random];
                 GridValue gridValue = GetRandomPosition();
 
@@ -199,6 +215,24 @@ namespace FS.Cores.MapGenerators
             }
 
             m_IsMonsterCreated = true;
+        }
+
+        /// <summary>
+        /// Init Turret preparing for crazy time
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator GenerateTurret()
+        {
+            yield return new WaitUntil(() => m_IsMonsterCreated);
+
+            foreach (var turret in m_Turrets)
+            {
+                turret.Stat = m_GameConfiguration.Turret.Stat;
+
+                yield return new WaitForEndOfFrame();
+            }
+
+            m_IsTurretInited = true;
         }
 
         /// <summary>
@@ -253,7 +287,6 @@ namespace FS.Cores.MapGenerators
                 }
             }
 
-            Debug.Log(amount);
             StartCoroutine(GenerateCollectHero(amount));
         }
 
@@ -304,6 +337,142 @@ namespace FS.Cores.MapGenerators
             return newGridValue;
         }
 
+        public List<GridValue> GetRandomPosition(CellSizeType type)
+        {
+            List<GridValue> list = new List<GridValue>();
+
+            switch (type)
+            {
+                case CellSizeType.CellSize_1x1:
+                    {
+                        GridValue newGridValue = GetRandomPosition();
+                        list.Add(newGridValue);
+                        break;
+                    }
+                case CellSizeType.CellSize_1x2:
+                    {
+                        int x = 0;
+                        int y = 0;
+
+                        while(list.Count < 2)
+                        {
+                            if(list.Count == 0)
+                            {
+                                x = Random.Range(0, m_Config.SizeX - 1);
+                                y = Random.Range(0, m_Config.SizeX - 2);
+                            }
+                            else
+                            {
+                                y += 1;
+                            }
+
+                            GridValue newGridValue = m_Grids[x, y];
+
+                            if (newGridValue.HasMember == false)
+                            {
+                                list.Add(newGridValue);
+                            }
+                            else
+                            {
+                                list.Clear();
+                            }
+                        }
+
+                        break;
+                    }
+                case CellSizeType.CellSize_2x1:
+                    {
+                        int x = 0;
+                        int y = 0;
+
+                        while (list.Count < 2)
+                        {
+                            if (list.Count == 0)
+                            {
+                                x = Random.Range(0, m_Config.SizeX - 2);
+                                y = Random.Range(0, m_Config.SizeX - 1);
+                            }
+                            else
+                            {
+                                x += 1;
+                            }
+
+                            GridValue newGridValue = m_Grids[x, y];
+
+                            if (newGridValue.HasMember == false)
+                            {
+                                list.Add(newGridValue);
+                            }
+                            else
+                            {
+                                list.Clear();
+                            }
+                        }
+
+                        break;
+                    }
+                case CellSizeType.CellSize_2x2:
+                    {
+                        int x = 0;
+                        int y = 0;
+
+                        while (list.Count < 4)
+                        {
+                            if(list.Count == 0)
+                            {
+                                x = Random.Range(0, m_Config.SizeX - 4);
+                                y = Random.Range(0, m_Config.SizeX - 4);
+                            }
+
+                            for (int i = 1; i <= 2; i++)
+                            {
+                                int findY = y;
+
+                                for (int j = 1; j <= 2; j++)
+                                {
+                                    GridValue newGridValue = m_Grids[x, findY];
+
+                                    if (newGridValue.HasMember == false)
+                                    {
+                                        findY += 1;
+                                        list.Add(newGridValue);
+                                    }
+                                    else
+                                    {
+                                        x = 0;
+                                        y = 0;
+                                        list.Clear();
+                                        break;
+                                    }
+                                }
+
+                                if (list.Count == 0)
+                                    break;
+
+                                x += 1;
+                            }
+                        }
+                        break;
+                    }
+            }
+
+            return list;
+        }
+
+        private Vector3 FindAveragePosition(List<GridValue> grids)
+        {
+            Vector3 position = Vector3.zero;
+
+            foreach (var grid in grids)
+            {
+                position += grid.Position;
+            }
+
+            position /= grids.Count;
+
+            return position;
+        }
+
         public void AddMember(int x, int y, IBehavior newMember)
         {
             newMember.Coordinate = new Vector2Int(x, y);
@@ -328,6 +497,11 @@ namespace FS.Cores.MapGenerators
                     }
                 }
             }
+        }
+
+        public Vector3 GetPosition(Vector2Int coordinate)
+        {
+            return m_Grids[coordinate.x, coordinate.y].Position;
         }
 
         #endregion

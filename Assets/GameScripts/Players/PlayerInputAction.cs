@@ -11,19 +11,11 @@ namespace FS.Cores.Players
 
         public Action<Vector2> OnMoveEvent;
         public Action OnSwitchHeroEvent;
+        public Action OnSwitchRotateHeroEvent;
 
         private void Awake()
         {
             Instance = this;
-        }
-
-        private void OnEnable()
-        {
-
-        }
-
-        private void OnDisable()
-        {
         }
 
         private void OnMovevment(InputValue value)
@@ -34,6 +26,11 @@ namespace FS.Cores.Players
         private void OnSwitchHero(InputValue value)
         {
             OnSwitchHeroEvent?.Invoke();
+        }
+
+        public void OnSwitchRotateHero(InputValue value)
+        {
+            OnSwitchRotateHeroEvent?.Invoke();
         }
     }
 }

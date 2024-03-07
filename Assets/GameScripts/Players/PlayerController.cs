@@ -1,8 +1,9 @@
 ﻿using FS.Characters;
 using FS.Characters.Heroes;
 using FS.Cores;
-using FS.Cores.MapGenerators;
+using FS.Cores.Generators;
 using FS.Cores.Players;
+using FS.Statistics;
 using FS.UIs;
 using System;
 using System.Collections.Generic;
@@ -47,6 +48,7 @@ namespace FS.Asset.Players
 
             PlayerInputAction.Instance.OnMoveEvent += Move;
             PlayerInputAction.Instance.OnSwitchHeroEvent += SwitchHero;
+            PlayerInputAction.Instance.OnSwitchRotateHeroEvent += SwitchRotateHero;
         }
 
         public override void Unregister()
@@ -55,6 +57,7 @@ namespace FS.Asset.Players
 
             PlayerInputAction.Instance.OnMoveEvent -= Move;
             PlayerInputAction.Instance.OnSwitchHeroEvent -= SwitchHero;
+            PlayerInputAction.Instance.OnSwitchRotateHeroEvent -= SwitchRotateHero;
         }
 
         #region Event
@@ -147,6 +150,42 @@ namespace FS.Asset.Players
             }
         }
 
+        private void SwitchRotateHero()
+        {
+            for (int i = 0; i < Heroes.Count-1; i++) // Switch by start from upper last hero
+            {
+                HeroesBehavior hero = Heroes[i];
+                HeroesBehavior nextHero = Heroes[i+1];
+
+                Vector2Int tmpUpperHeroCoordinate = hero.Coordinate;
+                Vector2Int tmpLastHeroCoordinate = nextHero.Coordinate;
+
+                int tmpUpperOrder = hero.Order;
+                int tmpLastOrder = nextHero.Order;
+
+                Vector2 tmpUpperPreviousDirection = hero.PreviousDirection;
+                Vector2 tmpLastPreviousDirection = nextHero.PreviousDirection;
+
+                Vector2Int tmpUpperPreviousCoordinate = hero.PreviousCoordinate;
+                Vector2Int tmpLastPreviousCoordinate = nextHero.PreviousCoordinate;
+
+                Vector3 tmpUpperTargetPosition = hero.TargetPosition;
+                Vector3 tmpLastTargetPosition = nextHero.TargetPosition;
+
+                Heroes[i] = nextHero;
+                Heroes[i+1] = hero;
+
+                nextHero.Clone(tmpUpperOrder, tmpUpperPreviousDirection, tmpUpperPreviousCoordinate, tmpUpperTargetPosition);
+                hero.Clone(tmpLastOrder, tmpLastPreviousDirection, tmpLastPreviousCoordinate, tmpLastTargetPosition);
+
+                Vector3 newUpperPosition = Generator.Instance.UpdateGrid(tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, hero);
+                Vector3 newLastPosition = Generator.Instance.UpdateGrid(tmpLastHeroCoordinate.x, tmpLastHeroCoordinate.y, tmpUpperHeroCoordinate.x, tmpUpperHeroCoordinate.y, nextHero);
+
+                hero.transform.position = newUpperPosition;
+                nextHero.transform.position = newLastPosition;
+            }
+        }
+
         private void SortHeros()
         {
             int order = 1;
@@ -154,7 +193,6 @@ namespace FS.Asset.Players
             foreach (var hero in Heroes)
             {
                 hero.Order = order++;
-                hero.OnForceEndEvent = ForceEnd;
                 hero.OnDeadEvent = Dead;
                 hero.OnTriggerWithHeroEvent = TriggerWithHero;
                 hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
@@ -177,7 +215,6 @@ namespace FS.Asset.Players
         private void SetHeroData(IBehavior newHero)
         {
             HeroesBehavior hero = newHero as HeroesBehavior;
-            hero.OnForceEndEvent = ForceEnd;
             hero.OnDeadEvent = Dead;
             hero.OnTriggerWithHeroEvent = TriggerWithHero;
             hero.OnTriggerWithObstacleEvent = TriggerWithObstacle;
@@ -188,11 +225,6 @@ namespace FS.Asset.Players
         }
 
         #region Callback
-
-        private void ForceEnd()
-        {
-            GameManager.instance.SetState(GameState.End);
-        }
 
         public void Dead(CharacterType type, IBehavior dead)
         {
@@ -207,6 +239,7 @@ namespace FS.Asset.Players
             }
             else if(type == CharacterType.Monster)
             {
+                GameStatistic.IncreaseMonsterEliminated();
                 Generator.Instance.RemoveMember(dead);
                 Destroy(dead.gameObject);
                 Generator.Instance.SpawnMonster();
@@ -215,8 +248,21 @@ namespace FS.Asset.Players
 
         private void TriggerWithHero(IBehavior newHero)
         {
-            SetHeroData(newHero);
-            Generator.Instance.SpawnCollectHero();
+            HeroesBehavior hero = newHero as HeroesBehavior;
+
+            if (hero.IsCollected == true)
+            {
+                GameManager.instance.SetState(GameState.End);
+            }
+            else
+            {
+                HeroesBehavior lastHero = Heroes[Heroes.Count - 1];
+                Vector3 positon = Generator.Instance.UpdateGrid(newHero.Coordinate.x, newHero.Coordinate.y, lastHero.PreviousCoordinate.x, lastHero.PreviousCoordinate.y, newHero);
+                hero.TargetPosition = positon;
+                hero.transform.position = positon;
+                SetHeroData(newHero);
+                Generator.Instance.SpawnCollectHero();
+            }
         }
 
         private void TriggerWithObstacle(IBehavior hero, IBehavior obstacle)

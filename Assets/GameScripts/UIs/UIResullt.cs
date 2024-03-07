@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FS.Statistics;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -22,6 +23,11 @@ namespace FS.UIs
             m_RetryButton.onClick.RemoveListener(OnClickRetry);
         }
 
+        private void Update()
+        {
+            SetMonsterDefeat();
+        }
+
         private void OnClickRetry()
         {
             SceneManager.LoadScene("scene_gameplay");
@@ -30,16 +36,18 @@ namespace FS.UIs
         public void Open()
         {
             m_CanvasGroup.alpha = 1.0f;
+            gameObject.SetActive(true);
         }
 
         public void Close()
         {
             m_CanvasGroup.alpha = 0.0f;
+            gameObject.SetActive(false);
         }
 
-        public void SetMonsterDefeat(int amount)
+        public void SetMonsterDefeat()
         {
-            m_MonsterDefeat.text = $"{amount}";
+            m_MonsterDefeat.text = $"{GameStatistic.MonstersDefeat}";
         }
     }
 }

@@ -2,11 +2,16 @@
 {
     public class GameStatistic
     {
-        public static int MonstersEliminated {  get; private set; }
+        public static int MonstersDefeat {  get; private set; }
+
+        public static void Clear()
+        {
+            MonstersDefeat = 0;
+        }
 
         public static void IncreaseMonsterEliminated()
         {
-            MonstersEliminated += 1;
+            MonstersDefeat += 1;
         }
     }
 }

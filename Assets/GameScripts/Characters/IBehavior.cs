@@ -1,6 +1,6 @@
 ﻿using FS.Characters;
 using FS.Cores.Formulas;
-using FS.Cores.MapGenerators;
+using FS.Cores.Generators;
 using FS.Datas;
 using FS.UIs;
 using System;
@@ -25,7 +25,6 @@ namespace FS.Cores
 
         public Action<int, int, int> OnStatChangeEvent;
         public Action<int, int> OnHPChangeEvent;
-        public Action OnForceEndEvent;
         public Action<CharacterType, IBehavior> OnDeadEvent;
 
         #region IInitalize
@@ -78,6 +77,7 @@ namespace FS.Cores
 
             Spawner.Instance.CreateDamagePopup(damageMessage, gameObject.transform.position);
             AudioManager.Instance.Hit();
+
             OnHPChangeEvent?.Invoke(Stat.MaxHP, Stat.HP);
 
             if (damageMessage.IsDead)

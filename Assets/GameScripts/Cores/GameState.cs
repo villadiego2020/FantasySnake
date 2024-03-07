@@ -5,6 +5,7 @@
         None,
         Prepare,
         Start,
+        CrazyTime,
         Pause,
         End
     }

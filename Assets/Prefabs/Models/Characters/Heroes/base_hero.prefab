@@ -350,6 +350,7 @@ MonoBehaviour:
     MaxHP: 0
     HP: 0
     Attack: 0
+    AttackRate: 0
   Coordinate: {x: 0, y: 0}
   CharacterGrownup: {fileID: 1268735512509381590}
   m_UIStat: {fileID: 7656290404755593660}
@@ -358,11 +359,14 @@ MonoBehaviour:
   m_LayerMask:
     serializedVersion: 2
     m_Bits: 448
+  m_Collider: {fileID: 6828784331765975437}
   IsCollected: 0
   Order: 0
   PreviousDirection: {x: 0, y: 0}
   PreviousCoordinate: {x: 0, y: 0}
   TargetPosition: {x: 0, y: 0, z: 0}
+  IsFirstMove: 0
+  m_Targets: []
 --- !u!114 &1268735512509381590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -405,8 +409,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.5, y: 0.5, z: 0.5}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.3, y: 0.3, z: 0.3}
+  m_Center: {x: 0, y: 0.3, z: 0}
 --- !u!54 &-7224170592988904788
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -797,11 +801,11 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: e342b143acb992040b9f2e19ccd633e3, type: 3}
+  m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
-  m_FillMethod: 4
+  m_FillMethod: 0
   m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0

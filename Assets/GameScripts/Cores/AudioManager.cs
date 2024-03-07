@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using FS.Characters;
+using UnityEngine;
 
 namespace FS.Cores
 {
@@ -14,15 +15,33 @@ namespace FS.Cores
 
         public static AudioManager Instance { get; private set; }
 
+        private void OnEnable()
+        {
+            GameManager.instance.OnGameStateUpdateEvent += GameStateChange;
+        }
+
+        private void OnDisable()
+        {
+            GameManager.instance.OnGameStateUpdateEvent -= GameStateChange;
+        }
+
+        private void GameStateChange(GameState state)
+        {
+            if (state == GameState.CrazyTime)
+            {
+                PlayBGM(1.5f);
+            }
+        }
+
         private void Awake()
         {
             Instance = this;
-
-            PlayBGM();
+            PlayBGM(1.0f);
         }
 
-        public void PlayBGM()
+        public void PlayBGM(float pitch)
         {
+            m_BGMSource.pitch = pitch;
             m_BGMSource.clip = m_BGM;
             m_BGMSource.Play();
         }

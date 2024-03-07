@@ -1,7 +1,7 @@
 ﻿using FS.Characters.Monsters;
 using FS.Cores;
 using FS.Cores.Formulas;
-using FS.Cores.MapGenerators;
+using FS.Cores.Generators;
 using FS.UIs;
 using System;
 using System.Collections.Generic;
@@ -19,12 +19,15 @@ namespace FS.Characters.Heroes
 
         [Header("Other")]
         [SerializeField] protected LayerMask m_LayerMask;
+        [SerializeField] private Collider m_Collider;
+
         public bool IsCollected;
         public int Order; // Order = 1 is Front Line
         public Vector2 PreviousDirection;
         public Vector2Int PreviousCoordinate;
         public Vector3 TargetPosition;
         private float m_AttackTime;
+        public bool IsFirstMove;
 
         public Action<IBehavior> OnTriggerWithHeroEvent;
         public Action<IBehavior, IBehavior> OnTriggerWithObstacleEvent;
@@ -56,6 +59,7 @@ namespace FS.Characters.Heroes
             m_Targets = new List<IBehavior>();
             m_AttackTime = 0;
             m_IsAttacking = false;
+            IsFirstMove = true;
 
             PreviousCoordinate = Coordinate;
             TargetPosition = transform.position;
@@ -95,6 +99,11 @@ namespace FS.Characters.Heroes
             m_UIStat.Open();
 
             SetFrontState();
+        }
+
+        public void ActiveCollider(bool isActive)
+        {
+            m_Collider.enabled = isActive;
         }
 
         public void Clone(int order, Vector2 previousDirection, Vector2Int previousCoordinate, Vector3 targetPosition)
@@ -155,14 +164,7 @@ namespace FS.Characters.Heroes
 
                             if(Order == 1)
                             {
-                                if (targetBehavior.IsCollected == true)
-                                {
-                                    OnForceEndEvent?.Invoke();
-                                }
-                                else
-                                {
-                                    OnTriggerWithHeroEvent?.Invoke(behavior);
-                                }
+                                OnTriggerWithHeroEvent?.Invoke(behavior);
                             }
 
                             break;

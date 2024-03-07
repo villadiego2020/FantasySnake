@@ -5,10 +5,9 @@ namespace FS.Datas
     [CreateAssetMenu(fileName = "Map", menuName = "FS/Configiration/Map", order = 1)]
     public class MapConfiguration : ScriptableObject
     {
-        [Range(1, 5)] public int CellSize;
         public int SizeX;
         public int SizeY;
-        public float Margin;
+        [Range(0,1f)] public float Margin;
         public GameObject GridPrefab;
     }
 }

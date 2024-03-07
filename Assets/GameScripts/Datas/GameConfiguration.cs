@@ -1,5 +1,6 @@
 ﻿using FS.Characters;
 using FS.Cores;
+using FS.Cores.Generators;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,6 +21,9 @@ namespace FS.Datas
         [Header("Obstacle")]
         public int NumberOfObstacle;
         public ObstacleData[] ObstacleDatas;
+
+        [Header("Turret")]
+        public CharacterData Turret;
     }
 
     [System.Serializable]
@@ -52,7 +56,7 @@ namespace FS.Datas
     public struct ObstacleData
     {
         public GameObject Prefab;
-        public Vector2 CellSize;
+        public CellSizeType CellSizeType;
     }
 
     [System.Serializable]

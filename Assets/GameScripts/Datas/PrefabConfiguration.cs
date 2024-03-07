@@ -1,4 +1,5 @@
-﻿using FS.Cores;
+﻿using FS.Characters.Turret;
+using FS.Cores;
 using UnityEngine;
 
 namespace FS.Datas
@@ -7,5 +8,7 @@ namespace FS.Datas
     public class PrefabConfiguration : ScriptableObject
     {
         public DamagePopup DamagePopupPrefab;
+        public TurretBullet TurretBulletPrefab;
+        public GameObject TurretBulletAreaPrefab;
     }
 }

@@ -13,3 +13,5 @@ MonoBehaviour:
   m_Name: Prefab
   m_EditorClassIdentifier: 
   DamagePopupPrefab: {fileID: 2775769472889260251, guid: 416a7eeba3227a445a0284f4adf83eb5, type: 3}
+  TurretBulletPrefab: {fileID: 4640377104628453927, guid: 4baf440e3dcfd9346a7b9f08d1fd2a0c, type: 3}
+  TurretBulletAreaPrefab: {fileID: 2499221056993695017, guid: 53cb59cfb75c3fb4eb924291cbac6559, type: 3}
