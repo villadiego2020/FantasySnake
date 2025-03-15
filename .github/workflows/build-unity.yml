@@ -17,11 +17,10 @@ jobs:
         uses: game-ci/unity-builder@v2
         with:
           unityVersion: ${{ secrets.UNITY_VERSION }}
-          targetPlatform: StandaloneWindows64
+          targetPlatform: Android
           buildMethod: "BuildScript.PerformBuild"
           customParameters: "-batchmode -nographics -silent-crashes -quit -logFile"
           unityLicense: ${{ secrets.UNITY_LICENSE }}  # ✅ ต้องมีบรรทัดนี้
-
 
       - name: Upload Build to GitHub Releases
         uses: softprops/action-gh-release@v1
