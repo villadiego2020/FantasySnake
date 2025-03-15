@@ -1,0 +1,30 @@
+name: Unity Auto Build
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Unity
+        uses: game-ci/unity-builder@v2
+        with:
+          unityVersion: ${{ secrets.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+          buildName: MyUnityGame
+          buildPath: Builds/Windows/MyUnityGame.exe
+          customParameters: "-batchmode -nographics -silent-crashes -quit -logFile"
+
+      - name: Upload Build to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Builds/Windows/MyUnityGame.exe
+          tag_name: v1.0.0
+          body: "New Unity Build 🚀"
