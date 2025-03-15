@@ -1,4 +1,4 @@
-name: Build Unity Project
+name: Build Unity Game
 
 on: 
   push:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [Client, Server]  # ✅ กำหนดให้ Build ทั้ง Client และ Server
+        target: [Client, Server]  # ✅ Build ทั้ง Client และ Server
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
 
       - name: Build Unity Game
         uses: game-ci/unity-builder@v4
-        env:          
+        env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -40,8 +40,22 @@ jobs:
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.Build${{ matrix.target }}"  # ✅ ใช้ BuildScript.BuildClient หรือ BuildScript.BuildServer
 
+      - name: Check if Build Folder Exists
+        run: |
+          ls -la Builds/Windows || echo "⚠️ Folder not found!"
+          ls -la Builds/Windows/${{ matrix.target }} || echo "⚠️ Build target folder not found!"
+
+      - name: Fix Permissions
+        run: chmod -R 777 Builds/Windows
+
+      - name: Remove Old Zip (if exists)
+        run: |
+          rm -f Builds/Windows/Client.zip
+          rm -f Builds/Windows/Server.zip
+
       - name: Compress Build Files
         run: |
+          mkdir -p Builds/Windows
           zip -r Builds/Windows/Client.zip Builds/Windows/Client
           zip -r Builds/Windows/Server.zip Builds/Windows/Server
 
@@ -59,7 +73,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Build Artifacts
+      - name: Download Build Artifacts (Client)
         uses: actions/download-artifact@v4
         with:
           name: Build-Client
