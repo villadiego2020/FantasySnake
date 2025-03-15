@@ -3,8 +3,8 @@ name: Build Unity Game
 on: 
   push:
     branches:
-      - main  # ✅ Trigger เมื่อ push ไปที่ branch `main`
-  workflow_dispatch:  # ✅ รองรับการกดรัน workflow เอง
+      - main
+  workflow_dispatch:
 
 jobs:
   buildForAll:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [Client, Server]  # ✅ Build ทั้ง Client และ Server
+        target: [Client, Server]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -38,36 +38,34 @@ jobs:
         with:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
-          buildMethod: "BuildScript.Build${{ matrix.target }}"  # ✅ ใช้ BuildScript.BuildClient หรือ BuildScript.BuildServer
-
-      - name: Check if Build Folder Exists
-        run: |
-          ls -la Builds/Windows || echo "⚠️ Folder not found!"
-          ls -la Builds/Windows/${{ matrix.target }} || echo "⚠️ Build target folder not found!"
+          buildMethod: "BuildScript.Build${{ matrix.target }}"
 
       - name: Fix Permissions
-        run: chmod -R 777 Builds/Windows
+        run: sudo chmod -R 777 Builds/Windows
 
-      - name: Remove Old Zip (if exists)
+      - name: Remove Old Files
         run: |
-          rm -f Builds/Windows/Client.zip
-          rm -f Builds/Windows/Server.zip
+          sudo rm -rf Builds/Windows/Client.zip
+          sudo rm -rf Builds/Windows/Server.zip
 
       - name: Compress Build Files
         run: |
-          mkdir -p Builds/Windows
-          zip -r Builds/Windows/Client.zip Builds/Windows/Client
-          zip -r Builds/Windows/Server.zip Builds/Windows/Server
+          if [ -d "Builds/Windows/Client" ]; then
+              tar -czvf Builds/Windows/Client.tar.gz -C Builds/Windows Client
+          fi
+          if [ -d "Builds/Windows/Server" ]; then
+              tar -czvf Builds/Windows/Server.tar.gz -C Builds/Windows Server
+          fi
 
       - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Build-${{ matrix.target }}
-          path: Builds/Windows/${{ matrix.target }}.zip
+          path: Builds/Windows/${{ matrix.target }}.tar.gz
 
   release:
     name: Create GitHub Release
-    needs: buildForAll  # ✅ รัน Release หลังจาก Build เสร็จ
+    needs: buildForAll
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -77,27 +75,27 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Build-Client
-          path: Builds/Windows/Client.zip
+          path: Builds/Windows/Client.tar.gz
 
       - name: Download Build Artifacts (Server)
         uses: actions/download-artifact@v4
         with:
           name: Build-Server
-          path: Builds/Windows/Server.zip
+          path: Builds/Windows/Server.tar.gz
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         with:
-          tag_name: v1.0.${{ github.run_number }}  # ✅ ตั้งชื่อ Release อัตโนมัติ
+          tag_name: v1.0.${{ github.run_number }}
           name: "Release v1.0.${{ github.run_number }}"
           body: |
             🎉 **New Release: v1.0.${{ github.run_number }}**
-            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.zip)
-            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.zip)
+            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.tar.gz)
+            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.tar.gz)
           draft: false
           prerelease: false
           files: |
-            Builds/Windows/Client.zip
-            Builds/Windows/Server.zip
+            Builds/Windows/Client.tar.gz
+            Builds/Windows/Server.tar.gz
