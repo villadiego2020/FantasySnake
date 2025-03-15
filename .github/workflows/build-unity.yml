@@ -45,8 +45,8 @@ jobs:
         with:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: ${{ matrix.targetPlatform }}
-          customParameters: "-batchmode -nographics -silent-crashes -quit -logFile --disable-assembly-logger"
-          buildMethod: "BuildScript.PerformBuild"
+          # customParameters: "-batchmode -nographics -silent-crashes -quit -logFile --disable-assembly-logger"
+          # buildMethod: "BuildScript.PerformBuild"
 
       # ✅ อัปโหลดไฟล์ Build เป็น Artifacts
       - name: Upload Build to GitHub Artifacts
