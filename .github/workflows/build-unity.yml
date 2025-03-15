@@ -9,27 +9,33 @@ on:
 jobs:
   buildForAll:
     name: Build for ${{ matrix.target }}
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         target: [Client, Server]
+
     steps:
-      - name: Checkout Repository
+      - name: 🧹 Free Up Disk Space (Windows)
+        run: |
+          echo "🧹 Removing unnecessary files..."
+          Remove-Item -Path "C:\ProgramData\Docker" -Recurse -Force -ErrorAction Ignore
+          Remove-Item -Path "C:\Program Files\dotnet" -Recurse -Force -ErrorAction Ignore
+          Remove-Item -Path "C:\Users\runneradmin\AppData\Local\Temp" -Recurse -Force -ErrorAction Ignore
+          Get-ChildItem -Path "C:\Windows\Temp" -Recurse -Force | Remove-Item -Force -Recurse -ErrorAction Ignore
+          Write-Host "✅ Disk Cleanup Completed!"
+        shell: powershell
+
+      - name: 🛠️ Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
 
-      - name: Cache Library Files
-        uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-${{ matrix.target }}-${{ github.run_id }}
-          restore-keys: |
-            Library-${{ matrix.target }}-
+      - name: 🔎 Debug Check Available Space (Before Build)
+        run: Get-PSDrive C
 
-      - name: Build Unity Game
+      - name: 🎮 Build Unity Game
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -39,57 +45,55 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.Build${{ matrix.target }}"
+        continue-on-error: true
 
-      - name: Fix Permissions
-        run: sudo chmod -R 777 Builds/Windows
+      - name: 🔓 Fix Permissions (Windows)
+        run: icacls Builds\Windows /grant Everyone:F /T /C /Q
 
-      - name: Remove Old Files
+      - name: 📦 Compress Build Files
         run: |
-          sudo rm -rf Builds/Windows/Client.tar.gz
-          sudo rm -rf Builds/Windows/Server.tar.gz
+          if (Test-Path "Builds/Windows/Client") {
+              Compress-Archive -Path Builds/Windows/Client -DestinationPath Builds/Windows/Client.zip -Force
+          }
+          if (Test-Path "Builds/Windows/Server") {
+              Compress-Archive -Path Builds/Windows/Server -DestinationPath Builds/Windows/Server.zip -Force
+          }
+        shell: powershell
 
-      - name: Compress Build Files
-        run: |
-          if [ -d "Builds/Windows/Client" ]; then
-              tar -czvf Builds/Windows/Client.tar.gz -C Builds/Windows Client
-          fi
-          if [ -d "Builds/Windows/Server" ]; then
-              tar -czvf Builds/Windows/Server.tar.gz -C Builds/Windows Server
-          fi
-
-      - name: Upload Build to GitHub Artifacts
+      - name: ☁️ Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Build-${{ matrix.target }}
-          path: Builds/Windows/${{ matrix.target }}.tar.gz
+          path: Builds/Windows/${{ matrix.target }}.zip
 
   release:
     name: Create GitHub Release
     needs: buildForAll
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+
     steps:
-      - name: Checkout Repository
+      - name: 🛠️ Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Build Artifacts (Client)
+      - name: 📥 Download Build Artifacts (Client)
         uses: actions/download-artifact@v4
         with:
           name: Build-Client
           path: Builds/Windows/
 
-      - name: Download Build Artifacts (Server)
+      - name: 📥 Download Build Artifacts (Server)
         uses: actions/download-artifact@v4
         with:
           name: Build-Server
           path: Builds/Windows/
 
-      - name: List Downloaded Files
-        run: ls -la Builds/Windows/
+      - name: 📌 Verify Build Files Exist
+        run: |
+          if (!(Test-Path "Builds/Windows/Client.zip")) { Write-Host "❌ Client build not found!"; exit 1 }
+          if (!(Test-Path "Builds/Windows/Server.zip")) { Write-Host "❌ Server build not found!"; exit 1 }
+        shell: powershell
 
-      - name: Ensure Files Have Correct Permissions
-        run: sudo chmod -R 777 Builds/Windows/
-
-      - name: Create GitHub Release
+      - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
@@ -98,10 +102,10 @@ jobs:
           name: "Release v1.0.${{ github.run_number }}"
           body: |
             🎉 **New Release: v1.0.${{ github.run_number }}**
-            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.tar.gz)
-            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.tar.gz)
+            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.zip)
+            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.zip)
           draft: false
           prerelease: false
           files: |
-            Builds/Windows/Client.tar.gz
-            Builds/Windows/Server.tar.gz
+            Builds/Windows/Client.zip
+            Builds/Windows/Server.zip
