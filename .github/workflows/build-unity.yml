@@ -17,17 +17,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-
-      - name: Cache Library Files
-        uses: actions/cache@v3
-        with:
-          path: Library
-          key: Library-${{ matrix.target }}-${{ github.run_id }}
-          restore-keys: |
-            Library-${{ matrix.target }}-
 
       - name: Build Unity Game
         uses: game-ci/unity-builder@v4
@@ -42,11 +31,6 @@ jobs:
 
       - name: Fix Permissions
         run: sudo chmod -R 777 Builds/Windows
-
-      - name: Remove Old Files
-        run: |
-          sudo rm -rf Builds/Windows/Client.zip
-          sudo rm -rf Builds/Windows/Server.zip
 
       - name: Compress Build Files
         run: |
@@ -71,17 +55,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Build Artifacts (Client)
-        uses: actions/download-artifact@v4
-        with:
-          name: Build-Client
-          path: Builds/Windows/Client.tar.gz
-
-      - name: Download Build Artifacts (Server)
-        uses: actions/download-artifact@v4
-        with:
-          name: Build-Server
-          path: Builds/Windows/Server.tar.gz
+      - name: Get Artifact ID
+        id: get_artifact
+        run: |
+          CLIENT_ID=$(gh api repos/${{ github.repository }}/actions/artifacts | jq '.artifacts[] | select(.name=="Build-Client") | .id')
+          SERVER_ID=$(gh api repos/${{ github.repository }}/actions/artifacts | jq '.artifacts[] | select(.name=="Build-Server") | .id')
+          echo "CLIENT_ID=${CLIENT_ID}" >> $GITHUB_ENV
+          echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -92,10 +74,7 @@ jobs:
           name: "Release v1.0.${{ github.run_number }}"
           body: |
             🎉 **New Release: v1.0.${{ github.run_number }}**
-            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.tar.gz)
-            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.tar.gz)
+            - 🖥️ **Client**: [Download](https://nightly.link/${{ github.repository }}/actions/artifacts/${{ env.CLIENT_ID }}.zip)
+            - 🖥️ **Server**: [Download](https://nightly.link/${{ github.repository }}/actions/artifacts/${{ env.SERVER_ID }}.zip)
           draft: false
           prerelease: false
-          files: |
-            Builds/Windows/Client.tar.gz
-            Builds/Windows/Server.tar.gz
