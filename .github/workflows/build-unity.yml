@@ -18,22 +18,24 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      # ✅ ล้าง Library Cache ก่อน (ใช้เฉพาะกรณีที่ต้องการ Reset Cache)
+      - name: Clear Cached Library (Optional)
+        run: rm -rf Library
+
+      # ✅ ตรวจสอบว่า Library โฟลเดอร์มีอยู่หรือไม่
+      - name: Ensure Library Folder Exists
+        run: mkdir -p Library
+
+      # ✅ ตั้งค่า Cache เพื่อบันทึก Library/ ไว้สำหรับ Build ถัดไป
       - name: Cache Library Files
         uses: actions/cache@v3
         with:
           path: Library
-          key: Library-${{ matrix.targetPlatform }}
-          restore-keys: Library-
+          key: Library-${{ matrix.targetPlatform }}-${{ github.run_id }}
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
 
-      - name: Free Disk Space (For Large Builds)
-        if: matrix.targetPlatform == 'Android'
-        uses: jlumbroso/free-disk-space@v1.3.1
-
-      - name: Check Unity License
-        run: echo "$UNITY_LICENSE" | head -n 5
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
+      # ✅ เริ่ม Build Unity และสร้าง Library/
       - name: Build with Unity
         uses: game-ci/unity-builder@v4
         env:
@@ -43,9 +45,10 @@ jobs:
         with:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: ${{ matrix.targetPlatform }}
-          customParameters: "-batchmode -nographics -silent-crashes -quit -logFile"
+          customParameters: "-batchmode -nographics -silent-crashes -quit -logFile --disable-assembly-logger"
           buildMethod: "BuildScript.PerformBuild"
 
+      # ✅ อัปโหลดไฟล์ Build เป็น Artifacts
       - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
