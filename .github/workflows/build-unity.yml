@@ -1,16 +1,19 @@
 name: Build Unity Project
 
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - main  # ✅ Trigger เมื่อ push ไปที่ branch `main`
+  workflow_dispatch:  # ✅ รองรับการกดรัน workflow เอง
 
 jobs:
-  buildForAllSupportedPlatforms:
-    name: Build for ${{ matrix.targetPlatform }}
+  buildForAll:
+    name: Build for ${{ matrix.target }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        targetPlatform:
-          - StandaloneWindows64 # Build a Windows 64-bit standalone.
+        target: [Client, Server]  # ✅ กำหนดให้ Build ทั้ง Client และ Server
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -18,25 +21,15 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      # ✅ ล้าง Library Cache ก่อน (ใช้เฉพาะกรณีที่ต้องการ Reset Cache)
-      - name: Clear Cached Library (Optional)
-        run: rm -rf Library
-
-      # ✅ ตรวจสอบว่า Library โฟลเดอร์มีอยู่หรือไม่
-      - name: Ensure Library Folder Exists
-        run: mkdir -p Library
-
-      # ✅ ตั้งค่า Cache เพื่อบันทึก Library/ ไว้สำหรับ Build ถัดไป
       - name: Cache Library Files
         uses: actions/cache@v3
         with:
           path: Library
-          key: Library-${{ matrix.targetPlatform }}-${{ github.run_id }}
+          key: Library-${{ matrix.target }}-${{ github.run_id }}
           restore-keys: |
-            Library-${{ matrix.targetPlatform }}-
+            Library-${{ matrix.target }}-
 
-      # ✅ เริ่ม Build Unity และสร้าง Library/
-      - name: Build with Unity
+      - name: Build Unity Game
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -44,16 +37,46 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           unityVersion: ${{ secrets.UNITY_VERSION }}
-          targetPlatform: ${{ matrix.targetPlatform }}
-          # customParameters: "-batchmode -nographics -silent-crashes -quit -logFile --disable-assembly-logger"
-          # buildMethod: "BuildScript.PerformBuild"
+          targetPlatform: StandaloneWindows64
+          buildMethod: "BuildScript.Build${{ matrix.target }}"  # ✅ ใช้ BuildScript.BuildClient หรือ BuildScript.BuildServer
 
-      # ✅ อัปโหลดไฟล์ Build เป็น Artifacts
       - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Build-${{ matrix.targetPlatform }}
-          path: |
-            build/${{ matrix.targetPlatform }}
-            Builds/
-            Builds/Windows/
+          name: Build-${{ matrix.target }}
+          path: Builds/Windows/${{ matrix.target }}
+
+  release:
+    name: Create GitHub Release
+    needs: buildForAll  # ✅ รัน Release หลังจาก Build เสร็จ
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Build-Client
+          path: Builds/Windows/Client
+
+      - name: Download Build Artifacts (Server)
+        uses: actions/download-artifact@v4
+        with:
+          name: Build-Server
+          path: Builds/Windows/Server
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.${{ github.run_number }}  # ✅ ตั้งชื่อ Release อัตโนมัติ
+          name: "Release v1.0.${{ github.run_number }}"
+          body: |
+            🎉 **New Release: v1.0.${{ github.run_number }}**
+            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/GameClient.exe)
+            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/GameServer.exe)
+          draft: false
+          prerelease: false
+          files: |
+            Builds/Windows/Client/GameClient.exe
+            Builds/Windows/Server/GameServer.exe
