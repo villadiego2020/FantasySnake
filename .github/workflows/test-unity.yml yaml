@@ -1,0 +1,10 @@
+name: Test Unity License
+on: workflow_dispatch
+jobs:
+  test-license:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check License
+        run: echo "$UNITY_LICENSE" | head -n 5
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
