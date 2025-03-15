@@ -58,12 +58,18 @@ jobs:
       - name: Get Artifact ID
         id: get_artifact
         run: |
-          CLIENT_ID=$(gh api repos/${{ github.repository }}/actions/artifacts | jq '.artifacts[] | select(.name=="Build-Client") | .id')
-          SERVER_ID=$(gh api repos/${{ github.repository }}/actions/artifacts | jq '.artifacts[] | select(.name=="Build-Server") | .id')
+          CLIENT_ID=$(gh api repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.name=="Build-Client") | .id')
+          SERVER_ID=$(gh api repos/${{ github.repository }}/actions/artifacts --jq '.artifacts[] | select(.name=="Build-Server") | .id')
+
+          if [[ -z "$CLIENT_ID" || -z "$SERVER_ID" ]]; then
+            echo "❌ Error: Cannot retrieve Artifact ID!"
+            exit 1
+          fi
+
           echo "CLIENT_ID=${CLIENT_ID}" >> $GITHUB_ENV
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -78,3 +84,4 @@ jobs:
             - 🖥️ **Server**: [Download](https://nightly.link/${{ github.repository }}/actions/artifacts/${{ env.SERVER_ID }}.zip)
           draft: false
           prerelease: false
+
