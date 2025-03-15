@@ -68,8 +68,10 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # ✅ ใช้ Personal Access Token (PAT)
         with:
-          tag_name: v1.0.${{ github.run_number }}  # ✅ ตั้งชื่อ Release อัตโนมัติ
+          tag_name: v1.0.${{ github.run_number }}
           name: "Release v1.0.${{ github.run_number }}"
           body: |
             🎉 **New Release: v1.0.${{ github.run_number }}**
@@ -80,3 +82,4 @@ jobs:
           files: |
             Builds/Windows/Client/GameClient.exe
             Builds/Windows/Server/GameServer.exe
+
