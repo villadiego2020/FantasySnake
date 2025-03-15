@@ -47,24 +47,45 @@ jobs:
           buildMethod: "BuildScript.Build${{ matrix.target }}"
         continue-on-error: true
 
+      - name: 🔍 Debug Build Output
+        run: |
+          Write-Host "🔎 Checking Build Output..."
+          Get-ChildItem -Path Builds\Windows -Recurse
+        shell: powershell
+
       - name: 🔓 Fix Permissions (Windows)
-        run: icacls Builds\Windows /grant Everyone:F /T /C /Q
+        run: |
+          if (Test-Path "Builds/Windows") {
+              icacls Builds\Windows /grant Everyone:F /T /C /Q
+              Write-Host "✅ Permissions Fixed!"
+          } else {
+              Write-Host "❌ Build Directory Not Found!"
+          }
+        shell: powershell
 
       - name: 📦 Compress Build Files
         run: |
           if (Test-Path "Builds/Windows/Client") {
+              Write-Host "✅ Client Build Found! Compressing..."
               Compress-Archive -Path Builds/Windows/Client -DestinationPath Builds/Windows/Client.zip -Force
+          } else {
+              Write-Host "❌ Client Build NOT Found!"
           }
           if (Test-Path "Builds/Windows/Server") {
+              Write-Host "✅ Server Build Found! Compressing..."
               Compress-Archive -Path Builds/Windows/Server -DestinationPath Builds/Windows/Server.zip -Force
+          } else {
+              Write-Host "❌ Server Build NOT Found!"
           }
         shell: powershell
 
       - name: ☁️ Upload Build to GitHub Artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: Build-${{ matrix.target }}
           path: Builds/Windows/${{ matrix.target }}.zip
+          if-no-files-found: ignore
 
   release:
     name: Create GitHub Release
