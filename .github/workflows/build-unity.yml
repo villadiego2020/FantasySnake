@@ -45,8 +45,8 @@ jobs:
 
       - name: Remove Old Files
         run: |
-          sudo rm -rf Builds/Windows/Client.zip
-          sudo rm -rf Builds/Windows/Server.zip
+          sudo rm -rf Builds/Windows/Client.tar.gz
+          sudo rm -rf Builds/Windows/Server.tar.gz
 
       - name: Compress Build Files
         run: |
@@ -75,13 +75,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Build-Client
-          path: Builds/Windows/Client.tar.gz
+          path: Builds/Windows/
 
       - name: Download Build Artifacts (Server)
         uses: actions/download-artifact@v4
         with:
           name: Build-Server
-          path: Builds/Windows/Server.tar.gz
+          path: Builds/Windows/
+
+      - name: List Downloaded Files
+        run: ls -la Builds/Windows/
+
+      - name: Ensure Files Have Correct Permissions
+        run: sudo chmod -R 777 Builds/Windows/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
