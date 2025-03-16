@@ -35,11 +35,13 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.BuildClient"
-          buildsPath: "Builds"  # เปลี่ยนจาก outputPath เป็น buildsPath
+          buildsPath: "Builds"  # Unity จะสร้างที่ Builds/StandaloneWindows64
 
-      - name: Debug - List Build Files
+      - name: Debug - Check Build Output
         shell: pwsh
-        run: Get-ChildItem -Path Builds -Recurse
+        run: |
+          Write-Host "🔍 Checking Builds directory..."
+          Get-ChildItem -Path Builds -Recurse
 
       - name: Remove Old Files
         shell: pwsh
@@ -50,7 +52,7 @@ jobs:
       - name: Compress Build Files
         shell: pwsh
         run: |
-          $clientFolder = "Builds/StandaloneWindows64/Client"  # ปรับ path ตาม Unity
+          $clientFolder = "Builds/StandaloneWindows64"  # เปลี่ยนจาก Builds/Client เป็น Builds/StandaloneWindows64
           $clientZip = "Builds/Client.zip"
           if (Test-Path $clientFolder) { 
               Compress-Archive -Path $clientFolder -DestinationPath $clientZip -Force
@@ -64,38 +66,3 @@ jobs:
         with:
           name: Build-Client
           path: Builds/Client.zip
-
-  release:
-    name: Create GitHub Release
-    needs: buildClient
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Download Build Artifacts (Client)
-        uses: actions/download-artifact@v4
-        with:
-          name: Build-Client
-          path: Builds/Client/
-
-      - name: List Downloaded Files
-        shell: pwsh
-        run: |
-          Write-Host "📂 Client Build:"
-          Get-ChildItem -Path Builds/Client/ -Recurse
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: "Release v1.0.${{ github.run_number }}"
-          body: |
-            🎉 **New Release: v1.0.${{ github.run_number }}**
-            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.zip)
-          draft: false
-          prerelease: false
-          files: |
-            Builds/Client.zip
