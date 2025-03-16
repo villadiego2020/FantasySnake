@@ -52,7 +52,7 @@ jobs:
       - name: Compress Build Files
         shell: pwsh
         run: |
-          $clientFolder = "$(Get-Location)\Builds\StandaloneWindows64"
+          $clientFolder = "$(Get-Location)\Builds\Windows\Client"  # แก้ Path ให้ตรงกับโฟลเดอร์ที่ Unity สร้าง
           $clientZip = "$(Get-Location)\Builds\Client.zip"
           
           if (Test-Path $clientFolder) { 
@@ -62,15 +62,14 @@ jobs:
               Write-Host "❌ ERROR: Client build folder not found!"
           }
 
-      - name: Debug - Check Client.zip Location
+      - name: Debug - Check ZIP File
         shell: pwsh
         run: |
-          Write-Host "🔍 Checking if Client.zip exists..."
-          if (Test-Path "$(Get-Location)\Builds\Client.zip") {
-              Write-Host "✅ Client.zip found at $(Get-Location)\Builds\Client.zip"
-          } else {
+          if (Test-Path "$(Get-Location)\Builds\Client.zip") { 
+              Write-Host "✅ Client.zip found!" 
+          } else { 
               Write-Host "❌ ERROR: Client.zip not found!"
-              Get-ChildItem -Path Builds -Recurse
+              Get-ChildItem -Path $(Get-Location)\Builds -Recurse
           }
 
       - name: Upload Build to GitHub Artifacts
