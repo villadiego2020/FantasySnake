@@ -21,17 +21,19 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-
-      - name: 🔍 Debug ก่อนเริ่ม Build (ตรวจสอบโฟลเดอร์)
+          
+      - name: 🔍 Debug ตรวจสอบโฟลเดอร์ก่อน Build
         run: |
-          if (Test-Path "Builds/Windows") { 
-              Write-Host "✅ พบโฟลเดอร์ Builds/Windows"
-              Get-ChildItem -Path Builds/Windows -Recurse 
+          $buildPath = "Builds/Windows"
+      
+          if (Test-Path $buildPath) { 
+              Write-Host "✅ พบโฟลเดอร์ $buildPath"
+              Get-ChildItem -Path $buildPath -Recurse
           } else { 
-              Write-Host "⚠️ ไม่พบโฟลเดอร์ Builds/Windows"
+              Write-Host "⚠️ ไม่พบโฟลเดอร์ $buildPath"
+              exit 1
           }
         shell: powershell
-
 
       - name: 🎮 Build Unity Game
         uses: game-ci/unity-builder@v4
