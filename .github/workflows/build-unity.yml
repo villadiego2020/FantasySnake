@@ -9,7 +9,7 @@ on:
 jobs:
   buildClient:
     name: Build Client
-    runs-on: windows-latest  # ใช้ Windows-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -35,7 +35,11 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.BuildClient"
-          outputPath: "Builds/Client/"  # โฟลเดอร์สำหรับ Client เท่านั้น
+          buildsPath: "Builds"  # เปลี่ยนจาก outputPath เป็น buildsPath
+
+      - name: Debug - List Build Files
+        shell: pwsh
+        run: Get-ChildItem -Path Builds -Recurse
 
       - name: Remove Old Files
         shell: pwsh
@@ -46,7 +50,7 @@ jobs:
       - name: Compress Build Files
         shell: pwsh
         run: |
-          $clientFolder = "Builds/Client"
+          $clientFolder = "Builds/StandaloneWindows64/Client"  # ปรับ path ตาม Unity
           $clientZip = "Builds/Client.zip"
           if (Test-Path $clientFolder) { 
               Compress-Archive -Path $clientFolder -DestinationPath $clientZip -Force
@@ -64,7 +68,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: buildClient
-    runs-on: windows-latest  # ใช้ Windows-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
