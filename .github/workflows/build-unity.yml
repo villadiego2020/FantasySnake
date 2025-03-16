@@ -16,24 +16,25 @@ jobs:
         target: [Client, Server]
 
     steps:
-      - name: 🧹 Free Up Disk Space (Windows)
-        run: |
-          echo "🧹 Removing unnecessary files..."
-          Remove-Item -Path "C:\ProgramData\Docker" -Recurse -Force -ErrorAction Ignore
-          Remove-Item -Path "C:\Program Files\dotnet" -Recurse -Force -ErrorAction Ignore
-          Remove-Item -Path "C:\Users\runneradmin\AppData\Local\Temp" -Recurse -Force -ErrorAction Ignore
-          Get-ChildItem -Path "C:\Windows\Temp" -Recurse -Force | Remove-Item -Force -Recurse -ErrorAction Ignore
-          Write-Host "✅ Disk Cleanup Completed!"
-        shell: powershell
-
       - name: 🛠️ Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
 
-      - name: 🔎 Debug Check Available Space (Before Build)
+      - name: 🔎 Check Disk Space Before Build
         run: Get-PSDrive C
+        shell: powershell
+
+      - name: 🧹 Cleanup Docker & Restart
+        run: |
+          echo "🛑 Stopping Docker..."
+          Stop-Service docker
+          echo "🧹 Removing Docker Cache..."
+          Remove-Item -Path "C:\ProgramData\Docker" -Recurse -Force -ErrorAction Ignore
+          Start-Service docker
+          echo "✅ Docker Restarted!"
+        shell: powershell
 
       - name: 🎮 Build Unity Game
         uses: game-ci/unity-builder@v4
@@ -49,7 +50,7 @@ jobs:
 
       - name: 🔍 Debug Build Output
         run: |
-          Write-Host "🔎 Checking Build Output..."
+          Write-Host "Checking Build Output..."
           Get-ChildItem -Path Builds\Windows -Recurse
         shell: powershell
 
