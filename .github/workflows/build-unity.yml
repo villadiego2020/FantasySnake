@@ -22,6 +22,11 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: 🔍 Debug ก่อนเริ่ม Build (ตรวจสอบโฟลเดอร์)
+        run: Get-ChildItem -Path Builds/Windows -Recurse
+        shell: powershell
+        continue-on-error: true
+
       - name: 🎮 Build Unity Game
         uses: game-ci/unity-builder@v4
         env:
@@ -34,11 +39,22 @@ jobs:
           buildMethod: "BuildScript.Build${{ matrix.target }}"
         continue-on-error: true
 
-      - name: 🔎 Debug Build Directory
-        run: Get-ChildItem -Path Builds\Windows -Recurse
+      - name: 🔎 Debug Unity Build Logs (ตรวจสอบว่า Unity Build สำเร็จหรือไม่)
+        run: |
+          if (Test-Path "Logs/UnityBuild.log") {
+              Get-Content Logs/UnityBuild.log -Tail 50
+          } else {
+              Write-Host "❌ Unity Build Log Not Found!"
+          }
         shell: powershell
+        continue-on-error: true
 
-      - name: 📦 Compress Build Files
+      - name: 🔍 Debug หลังจาก Build (ตรวจสอบไฟล์ที่ถูกสร้าง)
+        run: Get-ChildItem -Path Builds/Windows -Recurse
+        shell: powershell
+        continue-on-error: true
+
+      - name: 📦 Compress Build Files (บีบอัดไฟล์ให้แน่ใจว่าสร้างสำเร็จ)
         run: |
           if (Test-Path "Builds/Windows/Client") {
               Compress-Archive -Path Builds/Windows/Client -DestinationPath Builds/Windows/Client.zip -Force
@@ -55,7 +71,7 @@ jobs:
           }
         shell: powershell
 
-      - name: 🔍 Verify Build Files Exist
+      - name: 🔍 Verify Build Files Exist (เช็คก่อนอัปโหลด)
         run: |
           if (!(Test-Path "Builds/Windows/Client.zip")) { Write-Host "❌ Client build not found!"; exit 1 }
           if (!(Test-Path "Builds/Windows/Server.zip")) { Write-Host "❌ Server build not found!"; exit 1 }
@@ -88,10 +104,10 @@ jobs:
           name: Build-Server
           path: Builds/Windows/
 
-      - name: 📌 Verify Build Files Exist
+      - name: 🔍 Verify Downloaded Files
         run: |
-          if (!(Test-Path "Builds/Windows/Client.zip")) { Write-Host "❌ Client build not found!"; exit 1 }
-          if (!(Test-Path "Builds/Windows/Server.zip")) { Write-Host "❌ Server build not found!"; exit 1 }
+          if (!(Test-Path "Builds/Windows/Client.zip")) { Write-Host "❌ Client build not found after download!"; exit 1 }
+          if (!(Test-Path "Builds/Windows/Server.zip")) { Write-Host "❌ Server build not found after download!"; exit 1 }
         shell: powershell
 
       - name: 🚀 Create GitHub Release
