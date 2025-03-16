@@ -21,20 +21,10 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-          
-      - name: 🔍 Debug ตรวจสอบโฟลเดอร์ก่อน Build
-        shell: pwsh
-        run: |
-          $buildPath = "Builds/Windows"
-      
-          if (Test-Path "$buildPath") { 
-              Write-Host "✅ พบโฟลเดอร์: $buildPath"
-              Get-ChildItem -Path "$buildPath" -Recurse
-          } else { 
-              Write-Host "⚠️ ไม่พบโฟลเดอร์: $buildPath"
-              exit 1
-          }
-          
+
+      - name: 🔎 ตรวจสอบพื้นที่ว่างในดิสก์
+        run: Get-PSDrive C
+
       - name: 🎮 Build Unity Game
         uses: game-ci/unity-builder@v4
         env:
@@ -45,51 +35,28 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.Build${{ matrix.target }}"
-        continue-on-error: true
+        continue-on-error: false
 
-      - name: 🔎 Debug Unity Build Logs (ตรวจสอบ Unity Build)
+      - name: 🔍 ตรวจสอบว่า Unity Build สำเร็จหรือไม่
         run: |
-          if (Test-Path "Logs/UnityBuild.log") {
-              Get-Content Logs/UnityBuild.log -Tail 50
+          if (Test-Path "${{ github.workspace }}/Builds/Windows") {
+              echo "✅ Builds/Windows exists"
+              Get-ChildItem -Path "${{ github.workspace }}/Builds/Windows" -Recurse
           } else {
-              Write-Host "⚠️ Unity Build Log Not Found!"
+              echo "❌ Builds/Windows does not exist!"
+              exit 1
           }
-        shell: powershell
-        continue-on-error: true
+        shell: pwsh
 
-      - name: 🔍 Debug ตรวจสอบโฟลเดอร์หลังจาก Build
-        run: Get-ChildItem -Path Builds/Windows -Recurse
-        shell: powershell
-        continue-on-error: true
-
-      - name: 📦 Compress Build Files (บีบอัด Client และ Server)
+      - name: 📦 Compress Build Files
         run: |
-          if (Test-Path "Builds/Windows/Client") {
-              Compress-Archive -Path Builds/Windows/Client -DestinationPath Builds/Windows/Client.zip -Force
-              Write-Host "✅ Client.zip ถูกสร้างแล้ว"
-          } else {
-              Write-Host "❌ Client folder ไม่พบ! Build อาจจะล้มเหลว"
+          if (Test-Path "${{ github.workspace }}/Builds/Windows/Client") {
+              Compress-Archive -Path "${{ github.workspace }}/Builds/Windows/Client" -DestinationPath "${{ github.workspace }}/Builds/Windows/Client.zip" -Force
           }
-
-          if (Test-Path "Builds/Windows/Server") {
-              Compress-Archive -Path Builds/Windows/Server -DestinationPath Builds/Windows/Server.zip -Force
-              Write-Host "✅ Server.zip ถูกสร้างแล้ว"
-          } else {
-              Write-Host "❌ Server folder ไม่พบ! Build อาจจะล้มเหลว"
+          if (Test-Path "${{ github.workspace }}/Builds/Windows/Server") {
+              Compress-Archive -Path "${{ github.workspace }}/Builds/Windows/Server" -DestinationPath "${{ github.workspace }}/Builds/Windows/Server.zip" -Force
           }
-        shell: powershell
-
-      - name: 🔍 Verify Build Files Exist (เช็คก่อนอัปโหลด)
-        run: |
-          if (!(Test-Path "Builds/Windows/Client.zip")) { 
-              Write-Host "❌ Client build not found! ตรวจสอบ Unity Logs"; 
-              exit 1 
-          }
-          if (!(Test-Path "Builds/Windows/Server.zip")) { 
-              Write-Host "❌ Server build not found! ตรวจสอบ Unity Logs"; 
-              exit 1 
-          }
-        shell: powershell
+        shell: pwsh
 
       - name: ☁️ Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
@@ -118,11 +85,17 @@ jobs:
           name: Build-Server
           path: Builds/Windows/
 
-      - name: 🔍 Verify Downloaded Files
+      - name: 📌 ตรวจสอบว่าไฟล์ Build ถูกสร้างหรือไม่
         run: |
-          if (!(Test-Path "Builds/Windows/Client.zip")) { Write-Host "❌ Client build not found after download!"; exit 1 }
-          if (!(Test-Path "Builds/Windows/Server.zip")) { Write-Host "❌ Server build not found after download!"; exit 1 }
-        shell: powershell
+          if (!(Test-Path "Builds/Windows/Client.zip")) { 
+              echo "❌ Client build not found!" 
+              exit 1 
+          }
+          if (!(Test-Path "Builds/Windows/Server.zip")) { 
+              echo "❌ Server build not found!" 
+              exit 1 
+          }
+        shell: pwsh
 
       - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v1
