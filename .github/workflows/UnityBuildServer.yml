@@ -78,7 +78,51 @@ jobs:
           name: Build-Server
           path: ${{ github.workspace }}\Builds\Server.zip
           if-no-files-found: error  # ถ้าไม่มีไฟล์ ให้ workflow ล้มเหลว
+          
+  deployToPlayFab:
+    name: Deploy Server to PlayFab
+    needs: buildServer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
+      - name: Download Server Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Build-Server
+          path: Builds/
+
+      - name: List Downloaded Files
+        shell: pwsh
+        run: |
+          Write-Host "📂 Checking downloaded files..."
+          Get-ChildItem -Path Builds/ -Recurse
+
+      - name: Upload Server Build to PlayFab
+        run: |
+          curl -X POST "https://titleId.playfabapi.com/MultiplayerServer/UploadServerBuild" `
+            -H "X-SecretKey: ${{ secrets.PLAYFAB_SECRET_KEY }}" `
+            -H "Content-Type: application/json" `
+            -d '{
+              "BuildName": "Server-Build-${{ github.run_number }}",
+              "BuildVersion": "1.0.${{ github.run_number }}",
+              "ContainerFlavor": "ManagedWindowsServerCore",
+              "AssetFileName": "Server.zip",
+              "AssetFileSize": 1000000
+            }'
+
+      - name: Deploy Server Build on PlayFab
+        run: |
+          curl -X POST "https://titleId.playfabapi.com/MultiplayerServer/DeployServerBuild" `
+            -H "X-SecretKey: ${{ secrets.PLAYFAB_SECRET_KEY }}" `
+            -H "Content-Type: application/json" `
+            -d '{
+              "BuildName": "Server-Build-${{ github.run_number }}",
+              "Region": "EastUs",
+              "MaxServers": 5
+            }'
+            
   release:
       name: Create GitHub Release
       needs: buildServer
@@ -107,9 +151,11 @@ jobs:
             tag_name: v1.0.${{ github.run_number }}
             name: "Release v1.0.${{ github.run_number }}"
             body: |
-              🎉 **New Release: v1.0.${{ github.run_number }}**
-              - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.zip)
+              **New Release: v1.0.${{ github.run_number }}**
+              - **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.zip)
+              - Deploying Server 
             draft: false
             prerelease: false
             files: |
               Builds/Server.zip
+  
