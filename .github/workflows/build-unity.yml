@@ -9,7 +9,7 @@ on:
 jobs:
   buildClient:
     name: Build Client
-    runs-on: self-hosted
+    runs-on: windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -35,9 +35,9 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.BuildClient"
-          buildsPath: "Builds"  # Unity จะสร้างที่ Builds/StandaloneWindows64
+          buildsPath: "Builds"
 
-      - name: Debug - Check Build Output
+      - name: Debug - List Build Files
         shell: pwsh
         run: |
           Write-Host "🔍 Checking Builds directory..."
@@ -46,14 +46,15 @@ jobs:
       - name: Remove Old Files
         shell: pwsh
         run: |
-          $clientZip = "Builds/Client.zip"
+          $clientZip = "$(Get-Location)\Builds\Client.zip"
           if (Test-Path $clientZip) { Remove-Item $clientZip -Force }
 
       - name: Compress Build Files
         shell: pwsh
         run: |
-          $clientFolder = "Builds/StandaloneWindows64"  # เปลี่ยนจาก Builds/Client เป็น Builds/StandaloneWindows64
-          $clientZip = "Builds/Client.zip"
+          $clientFolder = "$(Get-Location)\Builds\StandaloneWindows64"
+          $clientZip = "$(Get-Location)\Builds\Client.zip"
+          
           if (Test-Path $clientFolder) { 
               Compress-Archive -Path $clientFolder -DestinationPath $clientZip -Force
               Write-Host "✅ Client.zip created successfully!"
@@ -61,8 +62,18 @@ jobs:
               Write-Host "❌ ERROR: Client build folder not found!"
           }
 
+      - name: Debug - Check ZIP File
+        shell: pwsh
+        run: |
+          if (Test-Path "$(Get-Location)\Builds\Client.zip") { 
+              Write-Host "✅ Client.zip found!" 
+          } else { 
+              Write-Host "❌ ERROR: Client.zip is missing!" 
+          }
+
       - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Build-Client
           path: Builds/Client.zip
+          if-no-files-found: error  # ถ้าไม่มีไฟล์ ให้ workflow ล้มเหลวเพื่อหา error
