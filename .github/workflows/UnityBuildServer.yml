@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload Server Build to PlayFab
         run: |
-          curl -X POST "https://titleId.playfabapi.com/MultiplayerServer/UploadServerBuild" `
+          curl -X POST "https:// ${{ secrets.PLAYFAB_TITLE_ID }}.playfabapi.com/MultiplayerServer/UploadServerBuild" `
             -H "X-SecretKey: ${{ secrets.PLAYFAB_SECRET_KEY }}" `
             -H "Content-Type: application/json" `
             -d '{
@@ -114,7 +114,7 @@ jobs:
 
       - name: Deploy Server Build on PlayFab
         run: |
-          curl -X POST "https://titleId.playfabapi.com/MultiplayerServer/DeployServerBuild" `
+          curl -X POST "https:// ${{ secrets.PLAYFAB_TITLE_ID }}.playfabapi.com/MultiplayerServer/DeployServerBuild" `
             -H "X-SecretKey: ${{ secrets.PLAYFAB_SECRET_KEY }}" `
             -H "Content-Type: application/json" `
             -d '{
