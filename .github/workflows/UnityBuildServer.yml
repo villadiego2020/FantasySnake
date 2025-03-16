@@ -1,4 +1,4 @@
-name: Build and Deploy Unity Server to PlayFab
+name: Build Unity Server
 
 on: 
   push:
