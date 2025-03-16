@@ -9,23 +9,27 @@ on:
 jobs:
   buildForAll:
     name: Build for ${{ matrix.target }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         target: [Client, Server]
-
     steps:
-      - name: 🛠️ Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
 
-      - name: 🔎 ตรวจสอบพื้นที่ว่างในดิสก์
-        run: Get-PSDrive C
+      - name: Cache Library Files
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: |
+            Library-${{ matrix.target }}-
 
-      - name: 🎮 Build Unity Game
+      - name: Build Unity Game
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -35,69 +39,57 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.Build${{ matrix.target }}"
-        continue-on-error: false
 
-      - name: 🔍 ตรวจสอบว่า Unity Build สำเร็จหรือไม่
+      - name: Fix Permissions
+        run: sudo chmod -R 777 Builds/Windows
+
+      - name: Remove Old Files
         run: |
-          if (Test-Path "${{ github.workspace }}/Builds/Windows") {
-              echo "✅ Builds/Windows exists"
-              Get-ChildItem -Path "${{ github.workspace }}/Builds/Windows" -Recurse
-          } else {
-              echo "❌ Builds/Windows does not exist!"
-              exit 1
-          }
-        shell: pwsh
+          sudo rm -rf Builds/Windows/Client.tar.gz
+          sudo rm -rf Builds/Windows/Server.tar.gz
 
-      - name: 📦 Compress Build Files
+      - name: Compress Build Files
         run: |
-          if (Test-Path "${{ github.workspace }}/Builds/Windows/Client") {
-              Compress-Archive -Path "${{ github.workspace }}/Builds/Windows/Client" -DestinationPath "${{ github.workspace }}/Builds/Windows/Client.zip" -Force
-          }
-          if (Test-Path "${{ github.workspace }}/Builds/Windows/Server") {
-              Compress-Archive -Path "${{ github.workspace }}/Builds/Windows/Server" -DestinationPath "${{ github.workspace }}/Builds/Windows/Server.zip" -Force
-          }
-        shell: pwsh
+          if [ -d "Builds/Windows/Client" ]; then
+              tar -czvf Builds/Windows/Client.tar.gz -C Builds/Windows Client
+          fi
+          if [ -d "Builds/Windows/Server" ]; then
+              tar -czvf Builds/Windows/Server.tar.gz -C Builds/Windows Server
+          fi
 
-      - name: ☁️ Upload Build to GitHub Artifacts
+      - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Build-${{ matrix.target }}
-          path: Builds/Windows/${{ matrix.target }}.zip
+          path: Builds/Windows/${{ matrix.target }}.tar.gz
 
   release:
     name: Create GitHub Release
     needs: buildForAll
-    runs-on: windows-latest
-
+    runs-on: ubuntu-latest
     steps:
-      - name: 🛠️ Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 📥 Download Build Artifacts (Client)
+      - name: Download Build Artifacts (Client)
         uses: actions/download-artifact@v4
         with:
           name: Build-Client
           path: Builds/Windows/
 
-      - name: 📥 Download Build Artifacts (Server)
+      - name: Download Build Artifacts (Server)
         uses: actions/download-artifact@v4
         with:
           name: Build-Server
           path: Builds/Windows/
 
-      - name: 📌 ตรวจสอบว่าไฟล์ Build ถูกสร้างหรือไม่
-        run: |
-          if (!(Test-Path "Builds/Windows/Client.zip")) { 
-              echo "❌ Client build not found!" 
-              exit 1 
-          }
-          if (!(Test-Path "Builds/Windows/Server.zip")) { 
-              echo "❌ Server build not found!" 
-              exit 1 
-          }
-        shell: pwsh
+      - name: List Downloaded Files
+        run: ls -la Builds/Windows/
 
-      - name: 🚀 Create GitHub Release
+      - name: Ensure Files Have Correct Permissions
+        run: sudo chmod -R 777 Builds/Windows/
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
@@ -106,10 +98,10 @@ jobs:
           name: "Release v1.0.${{ github.run_number }}"
           body: |
             🎉 **New Release: v1.0.${{ github.run_number }}**
-            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.zip)
-            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.zip)
+            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.tar.gz)
+            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.tar.gz)
           draft: false
           prerelease: false
           files: |
-            Builds/Windows/Client.zip
-            Builds/Windows/Server.zip
+            Builds/Windows/Client.tar.gz
+            Builds/Windows/Server.tar.gz
