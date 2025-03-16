@@ -47,7 +47,7 @@ jobs:
         shell: pwsh
         run: |
           $ServerZip = "$(Get-Location)\Builds\Server.zip"
-          if (Test-Path $ServerZip) { Remove-Item $ServerZip -Force }
+          if (Test-Path $serverZip) { Remove-Item $serverZip -Force }
 
       - name: Compress Build Files
         shell: pwsh
@@ -68,7 +68,7 @@ jobs:
           if (Test-Path "$(Get-Location)\Builds\Server.zip") { 
               Write-Host "✅ Server.zip found!" 
           } else { 
-              Write-Host "❌ ERROR: Server.zip not found!"
+              Write-Host "❌ ERROR: Client.zip not found!"
               Get-ChildItem -Path $(Get-Location)\Builds -Recurse
           }
 
