@@ -65,11 +65,12 @@ jobs:
       - name: Debug - Check Server ZIP
         shell: pwsh
         run: |
-          if (Test-Path "$(Get-Location)\Builds\Server.zip") { 
+          $serverZip = Join-Path -Path (Get-Location) -ChildPath "Builds\Server.zip"
+          if (Test-Path $serverZip) { 
               Write-Host "✅ Server.zip found!" 
           } else { 
               Write-Host "❌ ERROR: Server.zip not found!"
-              Get-ChildItem -Path $(Get-Location)\Builds -Recurse
+              Get-ChildItem -Path (Join-Path -Path (Get-Location) -ChildPath "Builds") -Recurse
           }
 
       - name: Upload Server Build to GitHub Artifacts
