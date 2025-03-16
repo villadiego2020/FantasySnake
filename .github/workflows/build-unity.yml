@@ -9,7 +9,7 @@ on:
 jobs:
   buildClient:
     name: Build Client
-    runs-on: windows-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
