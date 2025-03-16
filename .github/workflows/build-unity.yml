@@ -1,4 +1,4 @@
-name: Build Unity Client
+name: Build Unity Game
 
 on: 
   push:
@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  buildClient:
-    name: Build Client
+  buildForAll:
+    name: Build for ${{ matrix.target }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [Client, Server]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -21,11 +25,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: Library
-          key: Library-Client-${{ github.run_id }}
+          key: Library-${{ matrix.target }}-${{ github.run_id }}
           restore-keys: |
-            Library-Client-
+            Library-${{ matrix.target }}-
 
-      - name: Build Unity Client
+      - name: Build Unity Game
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -34,7 +38,7 @@ jobs:
         with:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
-          buildMethod: "BuildScript.BuildClient"
+          buildMethod: "BuildScript.Build${{ matrix.target }}"
           buildsPath: "Builds"
 
       - name: Debug - List Build Files
@@ -46,71 +50,78 @@ jobs:
       - name: Remove Old Files
         shell: pwsh
         run: |
-          $clientZip = "$(Get-Location)\Builds\Client.zip"
-          if (Test-Path $clientZip) { Remove-Item $clientZip -Force }
+          $zipFile = "$(Get-Location)\Builds\${{ matrix.target }}.zip"
+          if (Test-Path $zipFile) { Remove-Item $zipFile -Force }
 
       - name: Compress Build Files
         shell: pwsh
         run: |
-          $clientFolder = "$(Get-Location)\Builds\Windows\Client"  # แก้ Path ให้ตรงกับโฟลเดอร์ที่ Unity สร้าง
-          $clientZip = "$(Get-Location)\Builds\Client.zip"
-          
-          if (Test-Path $clientFolder) { 
-              Compress-Archive -Path $clientFolder -DestinationPath $clientZip -Force
-              Write-Host "✅ Client.zip created successfully!"
+          $buildFolder = "$(Get-Location)\Builds\Windows\${{ matrix.target }}"
+          $zipFile = "$(Get-Location)\Builds\${{ matrix.target }}.zip"
+
+          if (Test-Path $buildFolder) { 
+              Compress-Archive -Path $buildFolder -DestinationPath $zipFile -Force
+              Write-Host "✅ ${{ matrix.target }}.zip created successfully!"
           } else {
-              Write-Host "❌ ERROR: Client build folder not found!"
+              Write-Host "❌ ERROR: ${{ matrix.target }} build folder not found!"
           }
 
       - name: Debug - Check ZIP File
         shell: pwsh
         run: |
-          if (Test-Path "$(Get-Location)\Builds\Client.zip") { 
-              Write-Host "✅ Client.zip found!" 
+          if (Test-Path "$(Get-Location)\Builds\${{ matrix.target }}.zip") { 
+              Write-Host "✅ ${{ matrix.target }}.zip found!" 
           } else { 
-              Write-Host "❌ ERROR: Client.zip not found!"
+              Write-Host "❌ ERROR: ${{ matrix.target }}.zip not found!"
               Get-ChildItem -Path $(Get-Location)\Builds -Recurse
           }
 
       - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Build-Client
-          path: ${{ github.workspace }}\Builds\Client.zip
+          name: Build-${{ matrix.target }}
+          path: ${{ github.workspace }}\Builds\${{ matrix.target }}.zip
           if-no-files-found: error  # ถ้าไม่มีไฟล์ ให้ workflow ล้มเหลว
 
   release:
-      name: Create GitHub Release
-      needs: buildClient
-      runs-on: windows-latest
-      steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
-  
-        - name: Download Build Artifacts (Client)
-          uses: actions/download-artifact@v4
-          with:
-            name: Build-Client
-            path: Builds/
-  
-        - name: List Downloaded Files
-          shell: pwsh
-          run: |
-            Write-Host "📂 Checking downloaded files..."
-            Get-ChildItem -Path Builds/ -Recurse
-  
-        - name: Create GitHub Release
-          uses: softprops/action-gh-release@v1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          with:
-            tag_name: v1.0.${{ github.run_number }}
-            name: "Release v1.0.${{ github.run_number }}"
-            body: |
-              🎉 **New Release: v1.0.${{ github.run_number }}**
-              - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.zip)
-            draft: false
-            prerelease: false
-            files: |
-              Builds/Client.zip
+    name: Create GitHub Release
+    needs: buildForAll
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
+      - name: Download Build Artifacts (Client)
+        uses: actions/download-artifact@v4
+        with:
+          name: Build-Client
+          path: Builds/
+
+      - name: Download Build Artifacts (Server)
+        uses: actions/download-artifact@v4
+        with:
+          name: Build-Server
+          path: Builds/
+
+      - name: List Downloaded Files
+        shell: pwsh
+        run: |
+          Write-Host "📂 Checking downloaded files..."
+          Get-ChildItem -Path Builds/ -Recurse
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Release v1.0.${{ github.run_number }}"
+          body: |
+            🎉 **New Release: v1.0.${{ github.run_number }}**
+            - 🖥️ **Client**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Client.zip)
+            - 🖥️ **Server**: [Download](https://github.com/${{ github.repository }}/releases/download/v1.0.${{ github.run_number }}/Server.zip)
+          draft: false
+          prerelease: false
+          files: |
+            Builds/Client.zip
+            Builds/Server.zip
