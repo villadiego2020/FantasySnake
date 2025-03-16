@@ -9,7 +9,7 @@ on:
 jobs:
   buildForAll:
     name: Build for ${{ matrix.target }}
-    runs-on: windows-latest  # เปลี่ยนจาก self-hosted เป็น windows-latest
+    runs-on: windows-latest  # ใช้ Windows-latest
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +39,7 @@ jobs:
           unityVersion: ${{ secrets.UNITY_VERSION }}
           targetPlatform: StandaloneWindows64
           buildMethod: "BuildScript.Build${{ matrix.target }}"
+          outputPath: "Builds/${{ matrix.target }}/"  # กำหนดให้แยกโฟลเดอร์ Client/Server
 
       - name: Fix Permissions (Windows doesn't require chmod)
         run: echo "Permissions are OK on Windows"
@@ -46,29 +47,32 @@ jobs:
       - name: Remove Old Files
         shell: pwsh
         run: |
-          $clientPath = "Builds\Windows\Client.zip"
-          $serverPath = "Builds\Windows\Server.zip"
-          if (Test-Path $clientPath) { Remove-Item $clientPath -Force }
-          if (Test-Path $serverPath) { Remove-Item $serverPath -Force }
+          $outputPath = "Builds/${{ matrix.target }}"
+          $zipFile = "$outputPath.zip"
+          if (Test-Path $zipFile) { Remove-Item $zipFile -Force }
 
       - name: Compress Build Files
         shell: pwsh
         run: |
-          $clientFolder = "Builds\Windows\Client"
-          $serverFolder = "Builds\Windows\Server"
-          if (Test-Path $clientFolder) { Compress-Archive -Path $clientFolder -DestinationPath "Builds\Windows\Client.zip" -Force }
-          if (Test-Path $serverFolder) { Compress-Archive -Path $serverFolder -DestinationPath "Builds\Windows\Server.zip" -Force }
+          $outputPath = "Builds/${{ matrix.target }}"
+          $zipFile = "$outputPath.zip"
+          if (Test-Path $outputPath) { 
+              Compress-Archive -Path $outputPath -DestinationPath $zipFile -Force
+              Write-Host "✅ Build compressed to $zipFile"
+          } else {
+              Write-Host "❌ ERROR: Build folder not found!"
+          }
 
       - name: Upload Build to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Build-${{ matrix.target }}
-          path: Builds/Windows/${{ matrix.target }}.zip
+          path: Builds/${{ matrix.target }}.zip
 
   release:
     name: Create GitHub Release
     needs: buildForAll
-    runs-on: windows-latest  # เปลี่ยนจาก self-hosted เป็น windows-latest
+    runs-on: windows-latest  # ใช้ Windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -77,17 +81,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Build-Client
-          path: Builds/Windows/
+          path: Builds/Client/
 
       - name: Download Build Artifacts (Server)
         uses: actions/download-artifact@v4
         with:
           name: Build-Server
-          path: Builds/Windows/
+          path: Builds/Server/
 
       - name: List Downloaded Files
         shell: pwsh
-        run: Get-ChildItem -Path Builds\Windows\ -Recurse
+        run: |
+          Write-Host "📂 Client Build:"
+          Get-ChildItem -Path Builds/Client/ -Recurse
+          Write-Host "📂 Server Build:"
+          Get-ChildItem -Path Builds/Server/ -Recurse
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -103,5 +111,5 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            Builds/Windows/Client.zip
-            Builds/Windows/Server.zip
+            Builds/Client.zip
+            Builds/Server.zip
