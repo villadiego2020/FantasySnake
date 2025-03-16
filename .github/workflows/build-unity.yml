@@ -22,19 +22,13 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: 🔎 Check Disk Space Before Build
-        run: Get-PSDrive C
-        shell: powershell
-
-      - name: 🧹 Cleanup Docker & Restart
-        run: |
-          echo "🛑 Stopping Docker..."
-          Stop-Service docker
-          echo "🧹 Removing Docker Cache..."
-          Remove-Item -Path "C:\ProgramData\Docker" -Recurse -Force -ErrorAction Ignore
-          Start-Service docker
-          echo "✅ Docker Restarted!"
-        shell: powershell
+      - name: ♻️ Cache Library Folder
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            Library-${{ runner.os }}-
 
       - name: 🎮 Build Unity Game
         uses: game-ci/unity-builder@v4
