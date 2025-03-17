@@ -32,9 +32,8 @@ jobs:
         run: |
           PAYLOAD=$(jq -n \
             --arg username "GitHub Actions" \
-            --arg avatar_url "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" \
-            --arg content "**🚀 New Push to dev Branch!**\n\n**📝 Latest Commit:**\n${{ env.commit_title }}" \
-            '{ "username": $username, "avatar_url": $avatar_url, "content": $content }')
+            --arg content "New Push to dev Branch! | Latest Commit: ${{ env.commit_title }}" \
+            '{ "username": $username, "content": $content }')
 
           echo "$PAYLOAD"  # Debug JSON ก่อนส่งไป Discord
 
