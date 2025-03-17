@@ -19,8 +19,13 @@ jobs:
         id: commit_messages
         run: |
           echo "Generating commit messages..."
-          commits=$(git log --format='- %s' ${{ github.event.before }}..${{ github.sha }} | sed ':a;N;$!ba;s/\n/\\n/g' | jq -sR .)
-          echo "commit_messages=$commits" >> $GITHUB_ENV
+          commits=$(git log --format='- %s' ${{ github.event.before }}..${{ github.sha }} | sed ':a;N;$!ba;s/\n/\\n/g')
+          echo "commit_messages=$(echo "$commits" | jq -sR .)" >> $GITHUB_ENV
+
+      - name: Debug - Show Commit Messages
+        run: |
+          echo "Commit Messages:"
+          echo "${{ env.commit_messages }}"
 
       - name: Send Commit Messages to Discord
         env:
@@ -29,7 +34,7 @@ jobs:
           PAYLOAD=$(jq -n \
             --arg username "GitHub Actions" \
             --arg avatar_url "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" \
-            --arg content "**🚀 New Push to dev Branch!**\n\n**📝 Commit Messages:**\n${{ env.commit_messages }}" \
+            --arg content "**🚀 New Push to dev Branch!**\n\n**📝 Commit Messages:**\n$(echo "${{ env.commit_messages }}" | jq -r .)" \
             '{ "username": $username, "avatar_url": $avatar_url, "content": $content }')
 
           echo "$PAYLOAD"  # Debug JSON ก่อนส่งไป Discord
