@@ -8,12 +8,13 @@ on:
 jobs:
   discord_notify:
     name: Send Commit Title to Discord
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository (Only Dev Branch)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # ดึง Commit History เฉพาะล่าสุด
+          ref: dev  # Checkout เฉพาะ branch dev
+          fetch-depth: 0  # ดึงประวัติ Commit ทั้งหมด (ใช้กับ git log)
 
       - name: Get Commit Title
         id: commit_title
