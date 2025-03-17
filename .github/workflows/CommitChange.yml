@@ -32,7 +32,7 @@ jobs:
         run: |
           PAYLOAD=$(jq -n \
             --arg username "GitHub Actions" \
-            --arg content "**🆕 New Push to `dev` Branch**\n📌 **Latest Commit:** `${{ env.commit_title }}`" \
+            --arg content "New Push to dev Branch | Latest Commit: ${{ env.commit_title }}" \
             '{ "username": $username, "content": $content }')
 
           echo "$PAYLOAD"  # Debug JSON ก่อนส่งไป Discord
