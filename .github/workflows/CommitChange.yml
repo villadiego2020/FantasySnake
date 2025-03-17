@@ -3,7 +3,7 @@ name: Notify Discord on Dev Push
 on:
   push:
     branches:
-      - Main  # Trigger เมื่อ push เข้า branch dev
+      - main  # Trigger เมื่อ push เข้า branch dev
 
 jobs:
   discord_notify:
