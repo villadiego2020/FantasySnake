@@ -3,7 +3,7 @@ name: Notify Discord on Dev Push
 on:
   push:
     branches:
-      - main  # Trigger เมื่อ push เข้า branch dev
+      - Main  # Trigger เมื่อ push เข้า branch dev
 
 jobs:
   discord_notify:
@@ -32,7 +32,7 @@ jobs:
         run: |
           PAYLOAD=$(jq -n \
             --arg username "GitHub Actions" \
-            --arg content "New Push to dev Branch! | Latest Commit: ${{ env.commit_title }}" \
+            --arg content "**🆕 New Push to `dev` Branch**\n📌 **Latest Commit:** `${{ env.commit_title }}`" \
             '{ "username": $username, "content": $content }')
 
           echo "$PAYLOAD"  # Debug JSON ก่อนส่งไป Discord
