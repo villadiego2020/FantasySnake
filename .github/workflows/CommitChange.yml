@@ -6,8 +6,8 @@ on:
       - main  # Trigger เมื่อ push เข้า branch dev
 
 jobs:
-  create_release:
-    name: Create GitHub Release
+  discord_notify:
+    name: Send Release Note to Discord
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -23,29 +23,19 @@ jobs:
           echo "commit_messages<<EOF" >> $GITHUB_ENV
           echo "$commits" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
-  discord_notify:
-    name: Send Release Note to Discord
-    needs: create_release
-    runs-on: ubuntu-latest
-    steps:
+          
       - name: Send Release Note to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          RELEASE_NAME=$(echo '${{ needs.create_release.outputs.tag_name }}' | jq -Rsa .)
-          RELEASE_BODY=$(echo '${{ needs.create_release.outputs.body }}' | jq -Rsa .)
-          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/dev-${{ github.run_number }}"
-
           curl -H "Content-Type: application/json" \
           -X POST \
           -d '{
-            "username": "Delta Releases",
+            "username": "Delta push",
             "avatar_url": "https://www.iconpacks.net/icons/1/free-rocket-launch-icon-1190-thumb.png",
             "embeds": [{
-              "title": '"${RELEASE_NAME}"',
-              "description": '"${RELEASE_BODY}"',
-              "url": "'"$RELEASE_URL"'",
+              "title": "Pushed",
+              "description": "$commits" >> $GITHUB_ENV,
               "color": 16711680
             }]
           }' "${DISCORD_WEBHOOK}"
