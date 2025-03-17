@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository (Only Dev Branch)
         uses: actions/checkout@v4
         with:
-          ref: dev  # Checkout เฉพาะ branch dev
+          ref: main  # Checkout เฉพาะ branch dev
           fetch-depth: 0  # ดึงประวัติ Commit ทั้งหมด (ใช้กับ git log)
 
       - name: Get Commit Title
