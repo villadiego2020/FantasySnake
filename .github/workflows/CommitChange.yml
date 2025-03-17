@@ -1,19 +1,19 @@
-name: Auto Release on Dev Push
+name: Notify Discord on Dev Push
 
 on:
   push:
     branches:
-      - main  # Trigger เมื่อ push เข้า branch dev
+      - dev  # Trigger เมื่อ push เข้า branch dev
 
 jobs:
   discord_notify:
-    name: Send Release Note to Discord
+    name: Send Commit Messages to Discord
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # ดึง Commit History มาทั้งหมด
+          fetch-depth: 0  # ดึงประวัติ Commit เพื่อให้สามารถดึงข้อความที่ Push ขึ้นมาได้
 
       - name: Get Commit Messages
         id: commit_messages
@@ -23,19 +23,12 @@ jobs:
           echo "commit_messages<<EOF" >> $GITHUB_ENV
           echo "$commits" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-          
-      - name: Send Release Note to Discord
+
+      - name: Send Commit Messages to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -X POST \
-          -d '{
-            "username": "Delta push",
-            "avatar_url": "https://www.iconpacks.net/icons/1/free-rocket-launch-icon-1190-thumb.png",
-            "embeds": [{
-              "title": "Pushed",
-              "description": "$commits" >> $GITHUB_ENV,
-              "color": 16711680
-            }]
-          }' "${DISCORD_WEBHOOK}"
+          PAYLOAD=$(jq -n --arg content "**🚀 New Push to `dev` Branch!**\n\n**📝 Commit Messages:**\n${{ env.commit_messages }}" \
+          '{ "username": "GitHub Actions", "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png", "content": $content }')
+
+          curl -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "${DISCORD_WEBHOOK}"
