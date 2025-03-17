@@ -7,34 +7,33 @@ on:
 
 jobs:
   discord_notify:
-    name: Send Commit Messages to Discord
+    name: Send Commit Title to Discord
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # ดึงประวัติ Commit เพื่อให้สามารถดึงข้อความที่ Push ขึ้นมาได้
+          fetch-depth: 0  # ดึง Commit History เฉพาะล่าสุด
 
-      - name: Get Commit Messages
-        id: commit_messages
+      - name: Get Commit Title
+        id: commit_title
         run: |
-          echo "Generating commit messages..."
-          commits=$(git log --format='- %s' ${{ github.event.before }}..${{ github.sha }} | sed ':a;N;$!ba;s/\n/\\n/g')
-          echo "commit_messages=$(echo "$commits" | jq -sR .)" >> $GITHUB_ENV
+          echo "Extracting latest commit title..."
+          commit_title=$(git log -1 --pretty=format:"%s" | sed 's/"/\\"/g')
+          echo "commit_title=$commit_title" >> $GITHUB_ENV
 
-      - name: Debug - Show Commit Messages
+      - name: Debug - Show Commit Title
         run: |
-          echo "Commit Messages:"
-          echo "${{ env.commit_messages }}"
+          echo "Latest Commit Title: ${{ env.commit_title }}"
 
-      - name: Send Commit Messages to Discord
+      - name: Send Commit Title to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           PAYLOAD=$(jq -n \
             --arg username "GitHub Actions" \
             --arg avatar_url "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" \
-            --arg content "**🚀 New Push to dev Branch!**\n\n**📝 Commit Messages:**\n$(echo "${{ env.commit_messages }}" | jq -r .)" \
+            --arg content "**🚀 New Push to dev Branch!**\n\n**📝 Latest Commit:**\n${{ env.commit_title }}" \
             '{ "username": $username, "avatar_url": $avatar_url, "content": $content }')
 
           echo "$PAYLOAD"  # Debug JSON ก่อนส่งไป Discord
