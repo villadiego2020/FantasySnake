@@ -1,0 +1,11 @@
+# GitHub Linguist - keep the repo language bar representative of authored code.
+#
+# Assets/TextMesh Pro/ is Unity's TextMesh Pro "Essential Resources", imported verbatim
+# through Window > TextMeshPro > Import TMP Essential Resources. Every .shader, .cginc,
+# .hlsl and .shadergraph in that folder is byte-identical to the upstream
+# "TMP Essential Resources.unitypackage" shipped inside com.unity.ugui, so none of it is
+# shader work authored by this project. It stays in the repo, it just stops being counted.
+#
+# The quotes are required: gitattributes splits a line on whitespace, so an unquoted
+# "TextMesh Pro" is read as a pattern plus a bogus attribute name and the rule is dropped.
+"Assets/TextMesh Pro/**" linguist-vendored
